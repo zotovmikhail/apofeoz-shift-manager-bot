@@ -20,10 +20,15 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY . .
 
 # Create necessary directories
-RUN mkdir -p logs reports
+RUN mkdir -p logs reports data
 
 # Create non-root user
-RUN useradd -m -u 1000 botuser && chown -R botuser:botuser /app
+RUN useradd -m -u 1000 botuser
+
+# Set proper permissions for all directories
+RUN chown -R botuser:botuser /app && \
+    chmod -R 755 /app/logs /app/reports /app/data
+
 USER botuser
 
 # Run the bot
