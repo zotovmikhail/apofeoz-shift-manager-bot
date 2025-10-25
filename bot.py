@@ -84,7 +84,7 @@ class ApofeozWorkBot:
                 welcome_message = f"""
 🏗️ **Добро пожаловать в Apofeoz Work Manager, {user.first_name}!**
 
-Вы автоматически зарегистрированы как **Прораб**.
+Вы автоматически зарегистрированы как **Бригадир**.
 
 Эта система поможет вам:
 ✅ Отслеживать рабочие часы
@@ -108,8 +108,8 @@ class ApofeozWorkBot:
         help_text = """
 📚 **Apofeoz Work Manager - Руководство**
 
-**🏗️ Управление прорабами:**
-• `/start` - Главное меню (автоматическая регистрация как прораб)
+**🏗️ Управление бригадирами:**
+• `/start` - Главное меню (автоматическая регистрация как бригадир)
 
 **👥 Управление рабочими:**
 • Добавить нового рабочего через меню
@@ -140,7 +140,7 @@ class ApofeozWorkBot:
     async def show_main_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE, message: str = None):
         """Show main menu with buttons"""
         keyboard = [
-            [InlineKeyboardButton("👷 Меню прораба", callback_data="foreman_menu")],
+            [InlineKeyboardButton("👷 Меню бригадира", callback_data="foreman_menu")],
             [InlineKeyboardButton("👥 Управление рабочими", callback_data="workers_menu")],
             [InlineKeyboardButton("⏰ Рабочие сеансы", callback_data="sessions_menu")],
             [InlineKeyboardButton("📊 Отчет компании", callback_data="generate_company_report")],
@@ -205,7 +205,7 @@ class ApofeozWorkBot:
         keyboard = [
             [InlineKeyboardButton("📊 Отчет компании", callback_data="generate_company_report")],
             [InlineKeyboardButton("📅 Отчет по дням", callback_data="admin_daily_report")],
-            [InlineKeyboardButton("👷 Управление прорабами", callback_data="admin_foremen")],
+            [InlineKeyboardButton("👷 Управление бригадирами", callback_data="admin_foremen")],
             [InlineKeyboardButton("👥 Управление рабочими", callback_data="admin_workers")]
         ]
         
@@ -242,12 +242,12 @@ class ApofeozWorkBot:
             
             if hasattr(update, 'callback_query') and update.callback_query:
                 await update.callback_query.edit_message_text(
-                    "👷 **Меню прораба**\n\nУ вас пока нет рабочих.\n\nДобавьте первого рабочего!",
+                    "👷 **Меню бригадира**\n\nУ вас пока нет рабочих.\n\nДобавьте первого рабочего!",
                     reply_markup=InlineKeyboardMarkup(keyboard)
                 )
             else:
                 await update.message.reply_text(
-                    "👷 **Меню прораба**\n\nУ вас пока нет рабочих.\n\nДобавьте первого рабочего!",
+                    "👷 **Меню бригадира**\n\nУ вас пока нет рабочих.\n\nДобавьте первого рабочего!",
                     reply_markup=InlineKeyboardMarkup(keyboard),
                     parse_mode='Markdown'
                 )
@@ -283,7 +283,7 @@ class ApofeozWorkBot:
         keyboard.append([InlineKeyboardButton("📝 Заметки всех рабочих", callback_data="workers_notes_menu")])
         keyboard.append([InlineKeyboardButton("➕ Добавить рабочего", callback_data="add_worker")])
         
-        message_text = "👷 **Меню прораба**\n\n🟢 - Работает сейчас\n🔴 - Не работает\n\nНажмите на рабочего для управления сменой:"
+        message_text = "👷 **Меню бригадира**\n\n🟢 - Работает сейчас\n🔴 - Не работает\n\nНажмите на рабочего для управления сменой:"
         
         if hasattr(update, 'callback_query') and update.callback_query:
             await update.callback_query.edit_message_text(
@@ -320,7 +320,7 @@ class ApofeozWorkBot:
         foreman = self.user_manager.get_foreman(user.id)
         if not foreman and data not in ["main_menu", "help"]:
             await query.edit_message_text(
-                "❌ Вы не зарегистрированы как прораб.\n\nИспользуйте `/register` для регистрации."
+                "❌ Вы не зарегистрированы как бригадир.\n\nИспользуйте `/register` для регистрации."
             )
             return
         
@@ -420,7 +420,7 @@ class ApofeozWorkBot:
         foreman = self.user_manager.get_foreman(user.id)
         if not foreman:
             await update.callback_query.edit_message_text(
-                "❌ **Ошибка!**\n\nВы не зарегистрированы как прораб.",
+                "❌ **Ошибка!**\n\nВы не зарегистрированы как бригадир.",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("🔙 Назад", callback_data="foreman_menu")]
                 ]),
@@ -696,7 +696,7 @@ class ApofeozWorkBot:
         foreman = self.user_manager.get_foreman(user.id)
         if not foreman:
             await update.callback_query.edit_message_text(
-                "❌ **Ошибка!**\n\nВы не зарегистрированы как прораб.",
+                "❌ **Ошибка!**\n\nВы не зарегистрированы как бригадир.",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("🔙 Назад", callback_data="foreman_menu")]
                 ]),
@@ -781,7 +781,7 @@ class ApofeozWorkBot:
         
         if not other_workers:
             await update.callback_query.edit_message_text(
-                "🔄 **Переместить рабочего**\n\nНет рабочих у других прорабов для перемещения.",
+                "🔄 **Переместить рабочего**\n\nНет рабочих у других бригадиров для перемещения.",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("🔙 Назад", callback_data="add_worker")]
                 ]),
@@ -794,7 +794,7 @@ class ApofeozWorkBot:
             foreman_name = f"{worker['foreman_first_name']} {worker['foreman_last_name'] or ''}"
             keyboard.append([
                 InlineKeyboardButton(
-                    f"👤 {worker['first_name']} {worker['last_name'] or ''} ({worker['position'] or 'Должность не указана'}) - Прораб: {foreman_name}",
+                    f"👤 {worker['first_name']} {worker['last_name'] or ''} ({worker['position'] or 'Должность не указана'}) - Бригадир: {foreman_name}",
                     callback_data=f"transfer_worker_{worker['id']}"
                 )
             ])
@@ -836,10 +836,10 @@ class ApofeozWorkBot:
             await update.callback_query.edit_message_text(
                 f"✅ **Рабочий перемещен!**\n\n"
                 f"👤 {worker_name}\n"
-                f"👷 Перемещен от прораба: {old_foreman_name}\n"
+                f"👷 Перемещен от бригадира: {old_foreman_name}\n"
                 f"📅 Время: {datetime.now().strftime('%H:%M:%S')}",
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("👷 Меню прораба", callback_data="foreman_menu")]
+                    [InlineKeyboardButton("👷 Меню бригадира", callback_data="foreman_menu")]
                 ]),
                 parse_mode='Markdown'
             )
@@ -1188,7 +1188,7 @@ class ApofeozWorkBot:
         
         if not foremen:
             await update.callback_query.edit_message_text(
-                "👷 **Управление прорабами**\n\nНет активных прорабов.",
+                "👷 **Управление бригадирами**\n\nНет активных бригадиров.",
                 reply_markup=InlineKeyboardMarkup([[
                     InlineKeyboardButton("🔙 Назад", callback_data="admin_menu")
                 ]])
@@ -1207,7 +1207,7 @@ class ApofeozWorkBot:
         keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data="admin_menu")])
         
         await update.callback_query.edit_message_text(
-            "👷 **Управление прорабами**\n\nНажмите на прораба для увольнения:",
+            "👷 **Управление бригадирами**\n\nНажмите на бригадира для увольнения:",
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode='Markdown'
         )
@@ -1230,7 +1230,7 @@ class ApofeozWorkBot:
             foreman_name = f"{worker['foreman_first_name']} {worker['foreman_last_name'] or ''}"
             keyboard.append([
                 InlineKeyboardButton(
-                    f"👤 {worker['first_name']} {worker['last_name'] or ''} ({worker['position'] or 'Должность не указана'}) - Прораб: {foreman_name}",
+                    f"👤 {worker['first_name']} {worker['last_name'] or ''} ({worker['position'] or 'Должность не указана'}) - Бригадир: {foreman_name}",
                     callback_data=f"admin_fire_worker_{worker['id']}"
                 )
             ])
@@ -1250,16 +1250,16 @@ class ApofeozWorkBot:
         
         if success:
             await update.callback_query.edit_message_text(
-                f"✅ **Прораб уволен!**\n\nПрораб с ID {foreman_id} успешно уволен.",
+                f"✅ **Бригадир уволен!**\n\nБригадир с ID {foreman_id} успешно уволен.",
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("👷 Управление прорабами", callback_data="admin_foremen")],
+                    [InlineKeyboardButton("👷 Управление бригадирами", callback_data="admin_foremen")],
                     [InlineKeyboardButton("🔙 Админ панель", callback_data="admin_menu")]
                 ]),
                 parse_mode='Markdown'
             )
         else:
             await update.callback_query.edit_message_text(
-                "❌ **Ошибка увольнения!**\n\nНе удалось уволить прораба.",
+                "❌ **Ошибка увольнения!**\n\nНе удалось уволить бригадира.",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("🔙 Назад", callback_data="admin_foremen")]
                 ])
@@ -1308,7 +1308,7 @@ class ApofeozWorkBot:
         foreman = self.user_manager.get_user_by_id(foreman_id)
         if not foreman:
             await update.callback_query.edit_message_text(
-                "❌ **Ошибка!**\n\nПрораб не найден.",
+                "❌ **Ошибка!**\n\nБригадир не найден.",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("🔙 Назад", callback_data="admin_foremen")]
                 ])
@@ -1319,14 +1319,14 @@ class ApofeozWorkBot:
         
         await update.callback_query.edit_message_text(
             f"⚠️ **ПОДТВЕРЖДЕНИЕ УВОЛЬНЕНИЯ**\n\n"
-            f"Вы собираетесь уволить прораба:\n"
+            f"Вы собираетесь уволить бригадира:\n"
             f"👷 **{foreman_name}**\n"
             f"🆔 ID: {foreman_id}\n\n"
             f"⚠️ **ВНИМАНИЕ!**\n"
             f"• Это действие нельзя отменить\n"
-            f"• Прораб потеряет доступ к системе\n"
-            f"• Все его рабочие останутся без прораба\n\n"
-            f"Вы уверены, что хотите уволить этого прораба?",
+            f"• Бригадир потеряет доступ к системе\n"
+            f"• Все его рабочие останутся без бригадира\n\n"
+            f"Вы уверены, что хотите уволить этого бригадира?",
             reply_markup=InlineKeyboardMarkup([
                 [
                     InlineKeyboardButton("✅ Да, уволить", callback_data=f"admin_confirm_fire_foreman_{foreman_id}"),
@@ -1365,7 +1365,7 @@ class ApofeozWorkBot:
             f"Вы собираетесь уволить рабочего:\n"
             f"👤 **{worker_name}**\n"
             f"💼 Должность: {worker['position'] or 'Не указана'}\n"
-            f"👷 Прораб: {foreman_name}\n"
+            f"👷 Бригадир: {foreman_name}\n"
             f"🆔 ID: {worker_id}{active_sessions_warning}\n\n"
             f"⚠️ **ВНИМАНИЕ!**\n"
             f"• Это действие нельзя отменить\n"
@@ -1419,7 +1419,7 @@ class ApofeozWorkBot:
                 
                 message_text += f"🕐 {start_time} - {end_time} ({duration})\n"
                 message_text += f"📝 {notes}\n"
-                message_text += f"👷 Прораб: {activity['foreman_first_name']} {activity['foreman_last_name'] or ''}\n\n"
+                message_text += f"👷 Бригадир: {activity['foreman_first_name']} {activity['foreman_last_name'] or ''}\n\n"
         
         await update.callback_query.edit_message_text(
             message_text,
@@ -1453,7 +1453,7 @@ class ApofeozWorkBot:
         
         if not other_foremen:
             await update.callback_query.edit_message_text(
-                f"🔄 **Переместить рабочего**\n\n👤 {worker['first_name']} {worker['last_name'] or ''}\n\nНет других прорабов для перемещения.",
+                f"🔄 **Переместить рабочего**\n\n👤 {worker['first_name']} {worker['last_name'] or ''}\n\nНет других бригадиров для перемещения.",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("🔙 Назад", callback_data="foreman_menu")]
                 ]),
@@ -1474,7 +1474,7 @@ class ApofeozWorkBot:
         
         worker_name = f"{worker['first_name']} {worker['last_name'] or ''}"
         await update.callback_query.edit_message_text(
-            f"🔄 **Переместить рабочего**\n\n👤 {worker_name}\n💼 {worker['position'] or 'Должность не указана'}\n\nВыберите нового прораба:",
+            f"🔄 **Переместить рабочего**\n\n👤 {worker_name}\n💼 {worker['position'] or 'Должность не указана'}\n\nВыберите нового бригадира:",
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode='Markdown'
         )
@@ -1504,7 +1504,7 @@ class ApofeozWorkBot:
         
         if not target_foreman:
             await update.callback_query.edit_message_text(
-                "❌ **Ошибка!**\n\nЦелевой прораб не найден.",
+                "❌ **Ошибка!**\n\nЦелевой бригадир не найден.",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("🔙 Назад", callback_data="foreman_menu")]
                 ])
@@ -1521,10 +1521,10 @@ class ApofeozWorkBot:
             await update.callback_query.edit_message_text(
                 f"✅ **Рабочий перемещен!**\n\n"
                 f"👤 {worker_name}\n"
-                f"👷 Перемещен к прорабу: {target_foreman_name}\n"
+                f"👷 Перемещен к бригадиру: {target_foreman_name}\n"
                 f"📅 Время: {datetime.now().strftime('%H:%M:%S')}",
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("👷 Меню прораба", callback_data="foreman_menu")]
+                    [InlineKeyboardButton("👷 Меню бригадира", callback_data="foreman_menu")]
                 ]),
                 parse_mode='Markdown'
             )

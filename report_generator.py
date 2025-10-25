@@ -478,7 +478,7 @@ class ReportGenerator:
         column_mapping = {
             'work_date': 'Дата',
             'worker_full_name': 'Рабочий',
-            'foreman_full_name': 'Прораб',
+            'foreman_full_name': 'Бригадир',
             'position': 'Должность',
             'sessions_count': 'Количество Сеансов',
             'total_hours': 'Общее Время (часы)',
@@ -487,8 +487,8 @@ class ReportGenerator:
         
         df = df.rename(columns=column_mapping)
         
-        # Reorder columns: Дата, Рабочий, Прораб, then others
-        column_order = ['Дата', 'Рабочий', 'Прораб', 'Должность', 'Количество Сеансов', 'Общее Время (часы)', 'Общее Время (смены)']
+        # Reorder columns: Дата, Рабочий, Бригадир, then others
+        column_order = ['Дата', 'Рабочий', 'Бригадир', 'Должность', 'Количество Сеансов', 'Общее Время (часы)', 'Общее Время (смены)']
         df = df.reindex(columns=column_order)
         
         df.to_excel(writer, sheet_name='Ежедневная Сводка', index=False)
@@ -554,7 +554,7 @@ class ReportGenerator:
             'worker_id': 'ID Рабочего',
             'work_date': 'Дата',
             'worker_full_name': 'Рабочий',
-            'foreman_full_name': 'Прораб',
+            'foreman_full_name': 'Бригадир',
             'position': 'Должность',
             'start_time': 'Время Начала',
             'end_time': 'Время Окончания',
@@ -565,8 +565,8 @@ class ReportGenerator:
         
         df = df.rename(columns=column_mapping)
         
-        # Reorder columns: ID Сеанса, ID Рабочего, Дата, Рабочий, Прораб, then others
-        column_order = ['ID Сеанса', 'ID Рабочего', 'Дата', 'Рабочий', 'Прораб', 'Должность', 'Время Начала', 'Время Окончания', 'Часы', 'Смены', 'Заметки']
+        # Reorder columns: ID Сеанса, ID Рабочего, Дата, Рабочий, Бригадир, then others
+        column_order = ['ID Сеанса', 'ID Рабочего', 'Дата', 'Рабочий', 'Бригадир', 'Должность', 'Время Начала', 'Время Окончания', 'Часы', 'Смены', 'Заметки']
         df = df.reindex(columns=column_order)
         
         df.to_excel(writer, sheet_name='Детальные Сеансы', index=False)
@@ -630,7 +630,7 @@ class ReportGenerator:
         column_mapping = {
             'worker_id': 'ID Рабочего',
             'worker_full_name': 'Рабочий',
-            'foreman_full_name': 'Прораб',
+            'foreman_full_name': 'Бригадир',
             'position': 'Должность',
             'created_at': 'Дата Регистрации',
             'is_active': 'Статус',
@@ -641,8 +641,8 @@ class ReportGenerator:
         
         df = df.rename(columns=column_mapping)
         
-        # Reorder columns: ID Рабочего, Рабочий, Прораб, then others
-        column_order = ['ID Рабочего', 'Рабочий', 'Прораб', 'Должность', 'Дата Регистрации', 'Статус', 'Всего Сеансов', 'Общее Время (часы)', 'Общее Время (смены)']
+        # Reorder columns: ID Рабочего, Рабочий, Бригадир, then others
+        column_order = ['ID Рабочего', 'Рабочий', 'Бригадир', 'Должность', 'Дата Регистрации', 'Статус', 'Всего Сеансов', 'Общее Время (часы)', 'Общее Время (смены)']
         df = df.reindex(columns=column_order)
         
         df.to_excel(writer, sheet_name='Обзор Рабочих', index=False)
