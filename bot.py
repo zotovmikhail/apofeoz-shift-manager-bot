@@ -282,7 +282,6 @@ class ApofeozWorkBot:
                 ])
         
         # Add additional options
-        keyboard.append([InlineKeyboardButton("📝 Заметки всех рабочих", callback_data="workers_notes_menu")])
         keyboard.append([InlineKeyboardButton("➕ Добавить рабочего", callback_data="add_worker")])
         
         message_text = "👷 **Меню бригадира**\n\n🟢 - Работает сейчас\n🔴 - Не работает\n\nНажмите на рабочего для управления сменой:"
