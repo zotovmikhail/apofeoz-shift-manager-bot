@@ -12,7 +12,7 @@ import os
 logger = logging.getLogger(__name__)
 
 class ReportGenerator:
-    def __init__(self, db_path: str = "apofeoz_shifts.db"):
+    def __init__(self, db_path: str = "data/apofeoz_shifts.db"):
         self.db_path = db_path
     
     def _hours_to_shifts(self, hours: float) -> float:
@@ -128,7 +128,7 @@ class ReportGenerator:
                         w.position,
                         ws.start_time,
                         ws.end_time,
-                        ws.total_hours,
+                        COALESCE(NULLIF(ws.total_hours, 0), (julianday(ws.end_time) - julianday(ws.start_time)) * 24.0) as total_hours,
                         ws.notes,
                         CASE 
                             WHEN ws.end_time IS NOT NULL 
@@ -164,7 +164,7 @@ class ReportGenerator:
                         w.created_at,
                         w.is_active,
                         COUNT(ws.id) as total_sessions,
-                        SUM(CASE WHEN ws.end_time IS NOT NULL THEN ws.total_hours ELSE 0 END) as total_hours
+                        SUM(CASE WHEN ws.end_time IS NOT NULL THEN COALESCE(NULLIF(ws.total_hours, 0), (julianday(ws.end_time) - julianday(ws.start_time)) * 24.0) ELSE 0 END) as total_hours
                     FROM workers w
                     LEFT JOIN work_sessions ws ON w.id = ws.worker_id
                     WHERE w.user_id = ?
@@ -194,8 +194,8 @@ class ReportGenerator:
                         u.first_name as foreman_first_name,
                         u.last_name as foreman_last_name,
                         COUNT(ws.id) as sessions_count,
-                        SUM(ws.total_hours) as total_hours,
-                        AVG(ws.total_hours) as avg_hours_per_session
+                        SUM(COALESCE(NULLIF(ws.total_hours, 0), (julianday(ws.end_time) - julianday(ws.start_time)) * 24.0)) as total_hours,
+                        AVG(COALESCE(NULLIF(ws.total_hours, 0), (julianday(ws.end_time) - julianday(ws.start_time)) * 24.0)) as avg_hours_per_session
                     FROM work_sessions ws
                     JOIN workers w ON ws.worker_id = w.id
                     JOIN users u ON ws.user_id = u.id
@@ -228,7 +228,7 @@ class ReportGenerator:
                         w.position,
                         ws.start_time,
                         ws.end_time,
-                        ws.total_hours,
+                        COALESCE(NULLIF(ws.total_hours, 0), (julianday(ws.end_time) - julianday(ws.start_time)) * 24.0) as total_hours,
                         ws.notes,
                         u.first_name as foreman_first_name,
                         u.last_name as foreman_last_name,
@@ -266,7 +266,7 @@ class ReportGenerator:
                         u.first_name as foreman_first_name,
                         u.last_name as foreman_last_name,
                         COUNT(ws.id) as total_sessions,
-                        SUM(CASE WHEN ws.end_time IS NOT NULL THEN ws.total_hours ELSE 0 END) as total_hours
+                        SUM(CASE WHEN ws.end_time IS NOT NULL THEN COALESCE(NULLIF(ws.total_hours, 0), (julianday(ws.end_time) - julianday(ws.start_time)) * 24.0) ELSE 0 END) as total_hours
                     FROM workers w
                     JOIN users u ON w.user_id = u.id
                     LEFT JOIN work_sessions ws ON w.id = ws.worker_id

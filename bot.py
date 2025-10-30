@@ -34,7 +34,7 @@ class ApofeozWorkBot:
         self.user_manager = User(self.db_manager)
         self.worker_manager = Worker(self.db_manager)
         self.session_manager = WorkSession(self.db_manager)
-        self.report_generator = ReportGenerator()
+        self.report_generator = ReportGenerator(self.db_manager.db_path)
         
         
         # Initialize application with proper configuration
@@ -70,18 +70,19 @@ class ApofeozWorkBot:
                 await self.show_admin_menu(update, context)
             else:
                 await self.show_foreman_menu(update, context)
-        else:
-            # Automatically register user as foreman
-            success = self.user_manager.add_user(
-                telegram_id=user.id,
-                first_name=user.first_name,
-                username=user.username,
-                last_name=user.last_name,
-                role='foreman'
-            )
-            
-            if success:
-                welcome_message = f"""
+            return
+        
+        # Automatically register user as foreman
+        success = self.user_manager.add_user(
+            telegram_id=user.id,
+            first_name=user.first_name,
+            username=user.username,
+            last_name=user.last_name,
+            role='foreman'
+        )
+        
+        if success:
+            welcome_message = f"""
 🏗️ **Добро пожаловать в Apofeoz Work Manager, {user.first_name}!**
 
 Вы автоматически зарегистрированы как **Бригадир**.
@@ -93,14 +94,14 @@ class ApofeozWorkBot:
 ✅ Рассчитывать рабочее время и оплату
 
 Готовы начать работу!
-                """
-                await update.message.reply_text(welcome_message, parse_mode='Markdown')
-                # Show foreman menu after registration
-                await self.show_foreman_menu(update, context)
-            else:
-                await update.message.reply_text(
-                    "❌ Ошибка при регистрации. Попробуйте еще раз."
-                )
+            """
+            await update.message.reply_text(welcome_message, parse_mode='Markdown')
+            # Show foreman menu after registration
+            await self.show_foreman_menu(update, context)
+        else:
+            await update.message.reply_text(
+                "❌ Ошибка при регистрации. Попробуйте еще раз."
+            )
     
     @log_command
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -204,6 +205,7 @@ class ApofeozWorkBot:
             
         keyboard = [
             [InlineKeyboardButton("📊 Отчет компании", callback_data="generate_company_report")],
+            [InlineKeyboardButton("👷 Отчет бригадира", callback_data="admin_foreman_report")],
             [InlineKeyboardButton("📅 Отчет по дням", callback_data="admin_daily_report")],
             [InlineKeyboardButton("👷 Управление бригадирами", callback_data="admin_foremen")],
             [InlineKeyboardButton("👥 Управление рабочими", callback_data="admin_workers")]
@@ -298,6 +300,141 @@ class ApofeozWorkBot:
                 parse_mode='Markdown'
             )
     
+    async def show_admin_foreman_report_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Show list of foremen to generate a specific foreman report"""
+        foremen = self.user_manager.get_all_foremen()
+        if not foremen:
+            await update.callback_query.edit_message_text(
+                "👷 **Отчет бригадира**\n\nНет доступных бригадиров для отчета.",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Назад", callback_data="admin_menu")]]),
+                parse_mode='Markdown'
+            )
+            return
+        keyboard = []
+        for f in foremen:
+            name = f"{f['first_name']} {f['last_name'] or ''}".strip()
+            keyboard.append([InlineKeyboardButton(name or f"Бригадир #{f['id']}", callback_data=f"admin_show_foreman_report_{f['id']}")])
+        keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data="admin_menu")])
+        await update.callback_query.edit_message_text(
+            "👷 **Отчет бригадира**\n\nВыберите бригадира для генерации отчета:",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode='Markdown'
+        )
+
+    async def handle_admin_foreman_inline_report(self, update: Update, context: ContextTypes.DEFAULT_TYPE, foreman_id: int):
+        """Show last day activity for selected foreman as inline text (no file)."""
+        # Build data using existing daily report generator (returns last 2 days)
+        report_data = self.generate_daily_report(foreman_id)
+        if not report_data:
+            await update.callback_query.edit_message_text(
+                "📊 **Отчет бригадира (последний день)**\n\nНет данных за сегодня.",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Назад", callback_data="admin_foreman_report")]]),
+                parse_mode='Markdown'
+            )
+            return
+        # Take latest date only
+        latest_date = sorted(report_data.keys(), reverse=True)[0]
+        day_data = report_data[latest_date]
+        date_str = datetime.strptime(latest_date, '%Y-%m-%d').strftime('%d.%m.%Y')
+        lines = ["📊 **Отчет бригадира (последний день)**\n",
+                 f"📅 **{date_str}**",
+                 "📅 8 часов = 1.0 смена",
+                 f"⏱️ Всего часов: {day_data['total_hours']:.1f}",
+                 f"📊 Смен: {day_data['total_ratio']:.3f}"]
+        for worker in day_data['workers']:
+            ratio_emoji = "🟢" if worker['ratio'] >= 1.0 else ("🟡" if worker['ratio'] >= 0.5 else "🔴")
+            lines.append(f"{ratio_emoji} {worker['name']} ({worker['position']}): {worker['hours']:.1f}ч = {worker['ratio']:.3f}")
+        text = "\n".join(lines)
+        await update.callback_query.edit_message_text(
+            text,
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Назад", callback_data="admin_menu")]]),
+            parse_mode='Markdown'
+        )
+
+    def generate_all_foremen_last_day_report(self) -> Dict[str, Any]:
+        """Aggregate last day with data (within last 2 days) for all foremen grouped by foreman."""
+        try:
+            with sqlite3.connect(self.db_manager.db_path) as conn:
+                cursor = conn.cursor()
+                # Pull sessions for the last 2 days (to avoid timezone gaps) and then choose the latest date with data
+                cursor.execute("""
+                    SELECT 
+                        DATE(ws.start_time) as work_date,
+                        COALESCE(u.first_name, ''), COALESCE(u.last_name, ''),
+                        COALESCE(w.first_name, ''), COALESCE(w.last_name, ''), COALESCE(w.position, ''),
+                        SUM(
+                            COALESCE(
+                                NULLIF(ws.total_hours, 0),
+                                (julianday(ws.end_time) - julianday(ws.start_time)) * 24.0
+                            )
+                        ) as hours
+                    FROM work_sessions ws
+                    LEFT JOIN users u ON ws.user_id = u.id
+                    LEFT JOIN workers w ON ws.worker_id = w.id
+                    WHERE ws.end_time IS NOT NULL
+                      AND DATE(ws.start_time) >= DATE('now','-1 day')
+                    GROUP BY work_date, ws.user_id, ws.worker_id
+                    ORDER BY work_date DESC, u.first_name, u.last_name
+                """)
+                rows = cursor.fetchall()
+                if not rows:
+                    return None
+                # Determine the latest date present in rows
+                latest_date = max(r[0] for r in rows)
+                # Filter rows to that latest date only
+                filtered = [r for r in rows if r[0] == latest_date]
+                report: Dict[str, Any] = { 'date': latest_date, 'foremen': {} }
+                for _, f_first, f_last, w_first, w_last, position, hours in filtered:
+                    foreman_name = f"{f_first} {f_last or ''}".strip()
+                    worker_name = f"{w_first} {w_last or ''}".strip()
+                    if foreman_name not in report['foremen']:
+                        report['foremen'][foreman_name] = {
+                            'total_hours': 0.0,
+                            'total_ratio': 0.0,
+                            'workers': []
+                        }
+                    ratio = round((hours or 0.0) / 8.0, 3)
+                    report['foremen'][foreman_name]['workers'].append({
+                        'name': worker_name,
+                        'position': position or 'Должность не указана',
+                        'hours': hours or 0.0,
+                        'ratio': ratio
+                    })
+                    report['foremen'][foreman_name]['total_hours'] += hours or 0.0
+                    report['foremen'][foreman_name]['total_ratio'] += ratio
+                return report
+        except Exception as e:
+            logger.error(f"Error generating all foremen last day report: {e}")
+            return None
+
+    async def handle_admin_all_foremen_inline_report(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Show last day activity for all foremen inline (no file)."""
+        data = self.generate_all_foremen_last_day_report()
+        if not data:
+            await update.callback_query.edit_message_text(
+                "📊 **Отчет бригадиров (последний день)**\n\nНет данных за сегодня.",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Назад", callback_data="admin_menu")]]),
+                parse_mode='Markdown'
+            )
+            return
+        date_str = datetime.strptime(data['date'], '%Y-%m-%d').strftime('%d.%m.%Y')
+        lines = [f"📊 **Отчет бригадиров (последний день)**\n\n📅 **{date_str}**", "📅 8 часов = 1.0 смена"]
+        # Sort foremen by name for stable output
+        for foreman_name in sorted(data['foremen'].keys()):
+            f_data = data['foremen'][foreman_name]
+            lines.append(f"\n👷 **{foreman_name}**")
+            lines.append(f"⏱️ Всего часов: {f_data['total_hours']:.1f}")
+            lines.append(f"📊 Смен: {f_data['total_ratio']:.3f}")
+            for worker in f_data['workers']:
+                ratio_emoji = "🟢" if worker['ratio'] >= 1.0 else ("🟡" if worker['ratio'] >= 0.5 else "🔴")
+                lines.append(f"{ratio_emoji} {worker['name']} ({worker['position']}): {worker['hours']:.1f}ч = {worker['ratio']:.3f}")
+        text = "\n".join(lines)
+        await update.callback_query.edit_message_text(
+            text,
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Назад", callback_data="admin_menu")]]),
+            parse_mode='Markdown'
+        )
+
     
     async def handle_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle button callbacks"""
@@ -328,6 +465,8 @@ class ApofeozWorkBot:
             await self.show_foreman_menu(update, context)
         elif data == "admin_menu":
             await self.show_admin_menu(update, context)
+        elif data == "admin_foreman_report":
+            await self.handle_admin_all_foremen_inline_report(update, context)
         elif data == "admin_foremen":
             await self.handle_admin_foremen(update, context)
         elif data == "admin_workers":
@@ -351,8 +490,12 @@ class ApofeozWorkBot:
         elif data == "generate_report":
             await self.handle_generate_report(update, context)
         elif data.startswith("admin_generate_foreman_report_"):
+            # Legacy: keep compatibility, but prefer inline report
             foreman_id = int(data.split("_")[-1])
-            await self.handle_admin_generate_foreman_report(update, context, foreman_id)
+            await self.handle_admin_foreman_inline_report(update, context, foreman_id)
+        elif data.startswith("admin_show_foreman_report_"):
+            foreman_id = int(data.split("_")[-1])
+            await self.handle_admin_foreman_inline_report(update, context, foreman_id)
         elif data == "generate_company_report":
             await self.handle_generate_company_report(update, context)
         elif data == "help":
@@ -849,7 +992,7 @@ class ApofeozWorkBot:
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("🔙 Назад", callback_data="transfer_worker")]
                 ])
-            )
+        )
     
     async def handle_list_workers(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle list workers request"""
@@ -1677,7 +1820,7 @@ class ApofeozWorkBot:
                     await update.callback_query.edit_message_text(
                         "✅ **Отчет создан!**\n\nОтчет отправлен в чат.",
                         reply_markup=InlineKeyboardMarkup([[
-                            InlineKeyboardButton("🔙 Назад", callback_data="reports_menu")
+                            InlineKeyboardButton("🔙 Назад", callback_data="admin_menu")
                         ]]),
                         parse_mode='Markdown'
                     )
@@ -1691,7 +1834,7 @@ class ApofeozWorkBot:
                 await update.callback_query.edit_message_text(
                     "❌ **Ошибка создания отчета!**\n\nНе удалось создать отчет.",
                     reply_markup=InlineKeyboardMarkup([[
-                        InlineKeyboardButton("🔙 Назад", callback_data="reports_menu")
+                        InlineKeyboardButton("🔙 Назад", callback_data="admin_menu")
                     ]])
                 )
         except Exception as e:
@@ -1699,7 +1842,7 @@ class ApofeozWorkBot:
             await update.callback_query.edit_message_text(
                 "❌ **Ошибка создания отчета!**\n\nПроизошла ошибка при создании отчета. Попробуйте позже.",
                 reply_markup=InlineKeyboardMarkup([[
-                    InlineKeyboardButton("🔙 Назад", callback_data="reports_menu")
+                    InlineKeyboardButton("🔙 Назад", callback_data="admin_menu")
                 ]])
             )
     
@@ -1814,7 +1957,7 @@ class ApofeozWorkBot:
             await update.callback_query.edit_message_text(
                 "❌ **Ошибка создания отчета!**\n\nПроизошла ошибка при создании отчета компании. Попробуйте позже.",
                 reply_markup=InlineKeyboardMarkup([[
-                    InlineKeyboardButton("🔙 Назад", callback_data="reports_menu")
+                    InlineKeyboardButton("🔙 Назад", callback_data="admin_menu")
                 ]])
             )
     
