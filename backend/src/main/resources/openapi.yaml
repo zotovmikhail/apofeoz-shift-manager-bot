@@ -1,0 +1,296 @@
+openapi: 3.0.3
+info:
+  title: Apofeoz Shift Manager API
+  version: 0.1.0
+  description: |
+    MVP REST API. Смены только через `POST /api/v1/sync/batch`.
+servers:
+  - url: http://localhost:8080
+    description: Local
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+  /api/v1/auth/register:
+    post:
+      summary: Register (role USER)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [firstName, lastName, password]
+              properties:
+                email: { type: string, nullable: true }
+                phone: { type: string, nullable: true }
+                firstName: { type: string }
+                lastName: { type: string }
+                password: { type: string, minLength: 8 }
+      responses:
+        '201':
+          description: Tokens issued
+  /api/v1/auth/login:
+    post:
+      summary: Login by email or phone
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [login, password]
+              properties:
+                login: { type: string }
+                password: { type: string }
+      responses:
+        '200':
+          description: Tokens
+  /api/v1/auth/refresh:
+    post:
+      summary: Refresh access token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        '200':
+          description: New tokens
+  /api/v1/auth/logout:
+    post:
+      summary: Revoke refresh token
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        '204':
+          description: Logged out
+  /api/v1/users/me:
+    get:
+      summary: Current user profile
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: User
+  /api/v1/users:
+    get:
+      summary: List users (ADMIN)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: User list
+  /api/v1/users/{id}:
+    patch:
+      summary: Patch user (self — name only; ADMIN — role/status)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role: { type: string, enum: [USER, FOREMAN, ADMIN] }
+                status: { type: string, enum: [ACTIVE, INACTIVE] }
+                firstName: { type: string }
+                lastName: { type: string }
+      responses:
+        '200':
+          description: Updated user
+        '409':
+          description: last_admin_protected / foreman_has_workers (details.workerIds)
+  /api/v1/workers:
+    get:
+      summary: List workers (FOREMAN — свои; ADMIN — все)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Workers
+    post:
+      summary: Create worker card
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [firstName, lastName]
+              properties:
+                firstName: { type: string }
+                lastName: { type: string }
+                position: { type: string, nullable: true }
+                foremanId: { type: string, format: uuid, description: Required for ADMIN. Only ADMIN can create workers. }
+      responses:
+        '201':
+          description: Created
+  /api/v1/workers/{id}:
+    patch:
+      summary: Reassign foreman or change status
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                foremanId: { type: string, format: uuid }
+                status: { type: string, enum: [ACTIVE, INACTIVE] }
+      responses:
+        '200':
+          description: Updated
+  /api/v1/sync/batch:
+    post:
+      summary: Apply START_SESSION / END_SESSION batch (FOREMAN)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [batchUid, submittedAt, events]
+              properties:
+                batchUid: { type: string }
+                submittedAt: { type: string, format: date-time }
+                events:
+                  type: array
+                  maxItems: 100
+                  items:
+                    type: object
+                    required: [type, payload]
+                    properties:
+                      type: { type: string, enum: [START_SESSION, END_SESSION] }
+                      payload:
+                        type: object
+                        description: >
+                          START_SESSION requires {sessionId, workerId, startAt}. END_SESSION requires {sessionId, endAt}.
+                        additionalProperties: true
+      responses:
+        '200':
+          description: Applied or idempotent replay
+        '409':
+          description: Conflict; copy stored in failed_sync_batches
+  /api/v1/sessions/active:
+    get:
+      summary: List active sessions (FOREMAN)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Active sessions
+  /api/v1/sync/failed-batches:
+    get:
+      summary: List failed batches for current user
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: List
+  /api/v1/sync/failed-batches/{id}:
+    get:
+      summary: Failed batch with events snapshot
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Detail
+        '404':
+          description: Not found
+    delete:
+      summary: Remove failed batch record
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Deleted
+  /api/v1/reports/hours-by-worker-previous-day:
+    get:
+      summary: Hours + shift equivalent (8h) per worker (ADMIN)
+      description: Calendar day uses server report time zone (default Europe/Moscow).
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema: { type: string, format: date }
+          description: Report calendar day (default — yesterday in configured TZ)
+      responses:
+        '200':
+          description: Report
+        '403':
+          description: Not admin
+  /api/v1/reports/hours-by-worker-range:
+    get:
+      summary: Hours + shift equivalent (8h) per worker for date range (ADMIN)
+      description: Inclusive `from`/`to` are local dates in server report TZ (default Europe/Moscow).
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Report
+        '403':
+          description: Not admin
+  /api/v1/reports/timesheet.xlsx:
+    get:
+      summary: Excel timesheet matrix (days × workers), shift fractions only — no payments/formulas (ADMIN)
+      description: Row dates and hour splits use server report TZ (default Europe/Moscow).
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: XLSX file (attachment)
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        '400':
+          description: Invalid range
+        '403':
+          description: Not admin
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

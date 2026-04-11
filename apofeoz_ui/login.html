@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+    <style type="text/tailwindcss">
+      @theme inline {
+        --color-background: var(--background);
+        --color-foreground: var(--foreground);
+        --color-primary: var(--primary);
+        --color-primary-foreground: var(--primary-foreground);
+        --color-secondary: var(--secondary);
+        --color-secondary-foreground: var(--secondary-foreground);
+        --color-muted: var(--muted);
+        --color-muted-foreground: var(--muted-foreground);
+        --color-accent: var(--accent);
+        --color-accent-foreground: var(--accent-foreground);
+        --color-destructive: var(--destructive);
+        --color-card: var(--card);
+        --color-card-foreground: var(--card-foreground);
+        --color-popover: var(--popover);
+        --color-popover-foreground: var(--popover-foreground);
+        --color-border: var(--border);
+        --color-input: var(--input);
+        --color-ring: var(--ring);
+        --color-chart-1: var(--chart-1);
+        --color-chart-2: var(--chart-2);
+        --color-chart-3: var(--chart-3);
+        --color-chart-4: var(--chart-4);
+        --color-chart-5: var(--chart-5);
+
+        --font-font-sans: var(--font-sans);
+        --font-font-heading: var(--font-heading);
+        --font-font-serif: var(--font-serif);
+        --font-font-mono: var(--font-mono);
+
+        --radius-sm: calc(var(--radius) - 4px);
+        --radius-md: calc(var(--radius) - 2px);
+        --radius-lg: var(--radius);
+        --radius-xl: calc(var(--radius) + 4px);
+      }
+
+      :root {
+          --background: #0d0d0d;
+        --foreground: #f8fafc;
+        --primary: #d4af37;
+        --primary-foreground: #0d0d0d;
+        --secondary: #27272a;
+        --secondary-foreground: #e4e4e7;
+        --muted: #27272a;
+        --muted-foreground: #a1a1aa;
+        --accent: #27272a;
+        --accent-foreground: #f8fafc;
+        --destructive: #dc2626;
+        --card: #171717;
+        --card-foreground: #f8fafc;
+        --popover: #171717;
+        --popover-foreground: #f8fafc;
+        --border: #27272a;
+        --input: #171717;
+        --ring: #d4af37;
+        --chart-1: #d4af37;
+        --chart-2: #a1a1aa;
+        --chart-3: #ef4444;
+        --chart-4: #3f3f46;
+        --chart-5: #f8fafc;
+
+        --font-sans: "Inter";
+        --font-heading: "Space Grotesk";
+        --font-serif: "Playfair Display";
+        --font-mono: "JetBrains Mono";
+
+        --radius: 0.5rem;
+      }
+
+      /* Prevent layout shift for icons without explicit dimensions */
+      iconify-icon:not([width]):not([height]) {
+        display: inline-block;
+        width: 1em;
+        height: 1em;
+      }
+
+      /* Hide scrollbars */
+      *,
+      *::before,
+      *::after {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      *::-webkit-scrollbar {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      class="min-h-screen bg-background flex flex-col justify-center px-8 py-12 relative overflow-hidden"
+    >
+      <div
+        class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none"
+      ></div>
+      <div class="w-full max-w-sm mx-auto flex flex-col items-center mb-16 relative z-10">
+        <div
+          class="w-16 h-16 bg-card border border-border rounded-xl flex items-center justify-center mb-6 shadow-sm"
+        >
+          <iconify-icon
+            icon="solar:buildings-bold-duotone"
+            class="text-primary text-4xl"
+          ></iconify-icon>
+        </div>
+        <h1
+          class="font-heading text-4xl font-bold tracking-[0.25em] text-foreground uppercase text-center mb-3"
+        >
+          Апофеоз
+        </h1>
+        <p
+          class="text-muted-foreground text-xs uppercase tracking-[0.15em] font-medium flex items-center gap-2"
+        >
+          <span class="w-4 h-[1px] bg-primary/50"></span>Терминал Управления<span
+            class="w-4 h-[1px] bg-primary/50"
+          ></span>
+        </p>
+      </div>
+      <form class="w-full max-w-sm mx-auto space-y-6 relative z-10">
+        <div class="space-y-2">
+          <label
+            for="username"
+            class="text-[11px] font-bold text-muted-foreground uppercase tracking-widest"
+            >Идентификатор / Email</label
+          >
+          <div class="relative group">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <iconify-icon
+                icon="solar:user-bold"
+                class="text-muted-foreground group-focus-within:text-primary transition-colors"
+              ></iconify-icon>
+            </div>
+            <input
+              type="text"
+              id="username"
+              class="w-full bg-card border border-border text-foreground rounded-lg pl-11 pr-4 py-3.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-muted-foreground/30 font-medium"
+              placeholder="ID сотрудника или email"
+            />
+          </div>
+        </div>
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label
+              for="password"
+              class="text-[11px] font-bold text-muted-foreground uppercase tracking-widest"
+              >Код доступа</label
+            ><a
+              href="#"
+              class="text-[11px] font-bold text-primary hover:text-primary/80 transition-colors tracking-wide"
+              >Забыли код?</a
+            >
+          </div>
+          <div class="relative group">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <iconify-icon
+                icon="solar:lock-password-bold"
+                class="text-muted-foreground group-focus-within:text-primary transition-colors"
+              ></iconify-icon>
+            </div>
+            <input
+              type="password"
+              id="password"
+              class="w-full bg-card border border-border text-foreground rounded-lg pl-11 pr-4 py-3.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-muted-foreground/30 font-medium font-mono tracking-wider"
+              placeholder="••••••••"
+            />
+          </div>
+        </div>
+        <button
+          type="button"
+          class="w-full bg-primary text-primary-foreground font-heading font-bold text-[15px] rounded-full py-4 mt-8 hover:bg-primary/90 active:scale-[0.98] transition-all uppercase tracking-[0.15em]"
+        >
+          Авторизация
+        </button>
+      </form>
+      <div class="mt-auto pt-16 flex justify-center relative z-10">
+        <div
+          class="flex items-center gap-2 text-muted-foreground/40 text-[10px] font-mono uppercase tracking-wider"
+        >
+          <iconify-icon icon="solar:shield-check-bold" class="text-base"></iconify-icon
+          ><span>Защищенное соединение v2.4.1</span>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

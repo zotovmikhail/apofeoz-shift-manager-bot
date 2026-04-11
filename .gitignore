@@ -1,5 +1,8 @@
-# Python
+# Python (если появятся вспомогательные скрипты)
 __pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 *.py[cod]
 *$py.class
 *.so
@@ -43,6 +46,9 @@ reports/
 *.xlsx
 *.xls
 
+# Локальные данные старого бота / SQLite в корне
+/data/
+
 # Environment variables
 .env
 .env.local
@@ -82,3 +88,43 @@ test_*.py
 *_test.py
 check_*.py
 debug_*.py
+
+# Android
+android/.gradle/
+android/.idea/
+android/local.properties
+android/.DS_Store
+android/build/
+android/captures/
+android/.externalNativeBuild
+android/.cxx
+android/*.iml
+android/*.hprof
+android/.idea/
+android/local.properties
+android/.idea/workspace.xml
+android/.idea/tasks.xml
+android/.idea/gradle.xml
+android/.idea/assetWizardSettings.xml
+android/.idea/dictionaries
+android/.idea/libraries
+android/.idea/jarRepositories.xml
+android/.idea/caches
+android/.idea/modules.xml
+android/.idea/.name
+android/.idea/compiler.xml
+android/.idea/misc.xml
+android/.idea/vcs.xml
+android/.idea/navEditor.xml
+android/app/build/
+android/app/release/
+android/app/debug/
+
+# Kotlin (Backend)
+backend/.gradle/
+backend/build/
+backend/.idea/
+backend/*.iml
+backend/out/
+backend/.DS_Store
+backend/local.properties

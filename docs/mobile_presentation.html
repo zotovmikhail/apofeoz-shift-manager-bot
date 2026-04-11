@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Апеофеоз — презентация</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .presentation-container {
+            max-width: 1200px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .slide {
+            display: none;
+            padding: 60px;
+            min-height: 600px;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        .slide-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .slide-title {
+            font-size: 36px;
+            font-weight: 600;
+            color: #1976D2;
+            margin-bottom: 12px;
+        }
+
+        .slide-subtitle {
+            font-size: 18px;
+            color: #757575;
+        }
+
+        .phone-mockup {
+            width: 320px;
+            height: 680px;
+            background: #000;
+            border-radius: 30px;
+            padding: 6px;
+            margin: 0 auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: #F5F5F5;
+            border-radius: 24px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .screen-content {
+            padding: 20px;
+            height: calc(100% - 78px);
+            overflow-y: auto;
+        }
+
+        .status-bar {
+            height: 30px;
+            background: #1976D2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px;
+            color: white;
+            font-size: 12px;
+        }
+
+        .app-bar {
+            height: 48px;
+            background: #1976D2;
+            color: white;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .worker-card {
+            display: flex;
+            align-items: center;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .worker-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #1976D2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+
+        .worker-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .worker-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: #212121;
+            margin-bottom: 4px;
+        }
+
+        .worker-position {
+            font-size: 14px;
+            color: #757575;
+            margin-bottom: 4px;
+        }
+
+        .status-indicator {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .status-indicator.working {
+            background: #388E3C;
+            box-shadow: 0 0 8px rgba(56, 142, 60, 0.5);
+        }
+
+        .status-indicator.not-working {
+            background: #D32F2F;
+        }
+
+        .status-text {
+            font-size: 12px;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        .status-text.working {
+            color: #388E3C;
+        }
+
+        .status-text.not-working {
+            color: #D32F2F;
+        }
+
+        .session-duration {
+            font-size: 13px;
+            color: #1976D2;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            margin-bottom: 16px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            background: #1976D2;
+            color: white;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+
+        .fab {
+            position: absolute;
+            bottom: 80px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #1976D2;
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sync-status {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 12px;
+            text-align: center;
+            border-top: 1px solid #E0E0E0;
+            font-size: 12px;
+            color: #388E3C;
+        }
+
+        .navigation {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: #1976D2;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            -webkit-tap-highlight-color: rgba(25, 118, 210, 0.3);
+            -webkit-touch-callout: none;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .nav-btn:hover {
+            background: #1565C0;
+        }
+
+        .nav-btn:active {
+            background: #0D47A1;
+            transform: scale(0.98);
+        }
+
+        .nav-btn:disabled {
+            background: #E0E0E0;
+            color: #757575;
+            cursor: not-allowed;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .slide-counter {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 100;
+        }
+
+        .description {
+            text-align: center;
+            margin-top: 30px;
+            margin-bottom: 80px;
+            padding-bottom: 10px;
+            color: #757575;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .stats-card {
+            background: #E3F2FD;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .stats-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #1976D2;
+            margin-bottom: 16px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(25, 118, 210, 0.2);
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #757575;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 500;
+            color: #1976D2;
+        }
+
+        .session-history {
+            margin-top: 16px;
+        }
+
+        .session-item {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .session-date {
+            font-size: 12px;
+            color: #757575;
+            margin-bottom: 4px;
+        }
+
+        .session-info {
+            font-size: 14px;
+            color: #212121;
+        }
+
+        /* Mobile Adaptations */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .presentation-container {
+                border-radius: 10px;
+            }
+
+            .slide {
+                padding: 20px;
+                min-height: auto;
+            }
+
+            .slide-header {
+                margin-bottom: 20px;
+            }
+
+            .slide-title {
+                font-size: 24px;
+                margin-bottom: 8px;
+            }
+
+            .slide-subtitle {
+                font-size: 14px;
+            }
+
+            .phone-mockup {
+                width: 280px;
+                height: 595px;
+                border-radius: 25px;
+                padding: 4px;
+            }
+
+            .phone-screen {
+                border-radius: 21px;
+            }
+
+            .screen-content {
+                padding: 12px;
+            }
+
+            .status-bar {
+                height: 24px;
+                font-size: 10px;
+                padding: 0 12px;
+            }
+
+            .app-bar {
+                height: 40px;
+                font-size: 16px;
+                padding: 0 12px;
+            }
+
+            .card {
+                padding: 12px;
+                margin-bottom: 8px;
+            }
+
+            .worker-avatar {
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+                margin-right: 12px;
+            }
+
+            .worker-name {
+                font-size: 14px;
+            }
+
+            .worker-position {
+                font-size: 12px;
+            }
+
+            .status-text {
+                font-size: 11px;
+            }
+
+            .session-duration {
+                font-size: 12px;
+            }
+
+            .input-field {
+                padding: 10px 12px;
+                font-size: 13px;
+                margin-bottom: 12px;
+            }
+
+            .btn {
+                padding: 10px;
+                font-size: 14px;
+            }
+
+            .fab {
+                width: 48px;
+                height: 48px;
+                font-size: 20px;
+                bottom: 70px;
+                right: 16px;
+            }
+
+            .sync-status {
+                padding: 8px;
+                font-size: 11px;
+            }
+
+            .navigation {
+                bottom: 10px;
+                gap: 8px;
+                z-index: 100;
+            }
+
+            .nav-btn {
+                padding: 10px 16px;
+                font-size: 14px;
+                -webkit-tap-highlight-color: rgba(25, 118, 210, 0.3);
+                touch-action: manipulation;
+            }
+
+            .slide-counter {
+                top: 10px;
+                right: 10px;
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+
+            .description {
+                margin-top: 20px;
+                margin-bottom: 80px;
+                padding-bottom: 20px;
+                font-size: 14px;
+            }
+
+            .stats-card {
+                padding: 16px;
+                margin-bottom: 12px;
+            }
+
+            .stats-title {
+                font-size: 16px;
+                margin-bottom: 12px;
+            }
+
+            .stat-item {
+                padding: 6px 0;
+            }
+
+            .stat-label {
+                font-size: 13px;
+            }
+
+            .stat-value {
+                font-size: 14px;
+            }
+
+            .session-item {
+                padding: 10px;
+                margin-bottom: 6px;
+            }
+
+            .session-date {
+                font-size: 11px;
+            }
+
+            .session-info {
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .slide {
+                padding: 15px;
+            }
+
+            .slide-title {
+                font-size: 20px;
+            }
+
+            .slide-subtitle {
+                font-size: 12px;
+            }
+
+            .phone-mockup {
+                width: 240px;
+                height: 510px;
+            }
+
+            .screen-content {
+                padding: 10px;
+            }
+
+            .card {
+                padding: 10px;
+            }
+
+            .worker-avatar {
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
+                margin-right: 10px;
+            }
+
+            .worker-name {
+                font-size: 13px;
+            }
+
+            .worker-position {
+                font-size: 11px;
+            }
+
+            .nav-btn {
+                padding: 8px 12px;
+                font-size: 12px;
+                -webkit-tap-highlight-color: rgba(25, 118, 210, 0.3);
+                touch-action: manipulation;
+            }
+
+            .description {
+                font-size: 12px;
+                margin-bottom: 80px;
+                padding-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slide-counter">
+            <span id="current-slide">1</span> / <span id="total-slides">7</span>
+        </div>
+
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <div class="slide-header">
+                <div style="font-size: 80px; margin-bottom: 20px;">🏗️</div>
+                <div class="slide-title">Апеофеоз</div>
+                <div class="slide-subtitle">Мобильное приложение для управления сменами</div>
+            </div>
+            <div class="description">
+                <p>Интерактивная презентация мобильного приложения</p>
+                <p style="margin-top: 20px; font-size: 14px; color: #999;">Используйте стрелки ← → для навигации</p>
+            </div>
+        </div>
+
+        <!-- Slide 2: Foreman Home - Workers List -->
+        <div class="slide">
+            <div class="slide-header">
+                <div class="slide-title">Главный экран прораба</div>
+                <div class="slide-subtitle">Список рабочих с управлением сменами</div>
+            </div>
+            <div class="phone-mockup" style="margin: 0 auto;">
+                <div class="phone-screen">
+                    <div class="status-bar">
+                        <span>9:41</span>
+                        <span>📶 🔋</span>
+                    </div>
+                    <div class="app-bar">Мои рабочие</div>
+                    <div class="screen-content">
+                        <div style="font-size: 11px; color: #757575; margin-bottom: 12px; text-align: center;">
+                            🟢 - Смена идёт | 🔴 - Не работает<br>
+                            Старт/стоп смены — прямо с карточки рабочего
+                        </div>
+                        <div class="card worker-card">
+                            <div class="worker-avatar">👷</div>
+                            <div class="worker-info">
+                                <div class="worker-name">Вы (бригадир)</div>
+                                <div class="worker-position">Бригадир</div>
+                                <div class="status-text not-working">🔴 Не работает</div>
+                            </div>
+                        </div>
+                        <div class="card worker-card">
+                            <div class="worker-avatar">👷</div>
+                            <div class="worker-info">
+                                <div class="worker-name">Иван Петров</div>
+                                <div class="worker-position">Строитель</div>
+                                <div class="status-text working">🟢 Смена идёт · 2ч 15м</div>
+                            </div>
+                            <div style="display:flex; justify-content: space-between; align-items:center; margin-top: 8px;">
+                                <button class="btn small">⏹ Завершить смену</button>
+                                <button class="btn small secondary">⋯</button>
+                            </div>
+                        </div>
+                        <div class="card worker-card">
+                            <div class="worker-avatar">👷</div>
+                            <div class="worker-info">
+                                <div class="worker-name">Мария Сидорова</div>
+                                <div class="worker-position">Маляр</div>
+                                <div class="status-text not-working">🔴 Не работает</div>
+                            </div>
+                            <div style="display:flex; justify-content: space-between; align-items:center; margin-top: 8px;">
+                                <button class="btn small">▶ Начать смену</button>
+                                <button class="btn small secondary">⋯</button>
+                            </div>
+                        </div>
+                        <div class="card worker-card">
+                            <div class="worker-avatar">👷</div>
+                            <div class="worker-info">
+                                <div class="worker-name">Алексей Иванов</div>
+                                <div class="worker-position">Плотник</div>
+                                <div class="status-text not-working">🔴 Не работает</div>
+                            </div>
+                            <div style="display:flex; justify-content: space-between; align-items:center; margin-top: 8px;">
+                                <button class="btn small">▶ Начать смену</button>
+                                <button class="btn small secondary">⋯</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="fab">➕</button>
+                    <div class="sync-status">🌐 Синхронизировано</div>
+                </div>
+            </div>
+            <div class="description">
+                Главный экран показывает всех рабочих с их текущим статусом. Бригадир стартует и завершает смены прямо с карточек, а дополнительные действия (например, «Забрать себе» рабочего) доступны через меню ⋯.
+            </div>
+        </div>
+
+        <!-- Slide 3: Start/Stop Session -->
+        <div class="slide">
+            <div class="slide-header">
+                <div class="slide-title">Управление сменами</div>
+                <div class="slide-subtitle">Одно нажатие - начало или завершение смены</div>
+            </div>
+            <div class="phone-mockup" style="margin: 0 auto;">
+                <div class="phone-screen">
+                    <div class="status-bar">
+                        <span>9:41</span>
+                        <span>📶 🔋</span>
+                    </div>
+                    <div class="app-bar">Мои рабочие</div>
+                    <div class="screen-content">
+                        <div style="font-size: 11px; color: #757575; margin-bottom: 12px; text-align: center;">
+                            Нажмите на рабочего для управления сменой
+                        </div>
+                        <div class="card worker-card" style="background: #E8F5E9; border: 2px solid #388E3C;">
+                            <div class="worker-avatar">👷</div>
+                            <div class="worker-info">
+                                <div class="worker-name">Иван Петров</div>
+                                <div class="worker-position">Строитель</div>
+                                <div class="status-text working" style="font-weight: 600;">🟢 Работает сейчас</div>
+                                <div class="session-duration">⏳ Длительность: 2ч 15м</div>
+                            </div>
+                            <div class="status-indicator working"></div>
+                        </div>
+                        <div style="text-align: center; margin-top: 16px; padding: 12px; background: #E3F2FD; border-radius: 8px;">
+                            <div style="font-size: 14px; color: #1976D2; font-weight: 500;">Нажмите для завершения смены</div>
+                        </div>
+                        <div class="card worker-card" style="margin-top: 16px;">
+                            <div class="worker-avatar">👷</div>
+                            <div class="worker-info">
+                                <div class="worker-name">Мария Сидорова</div>
+                                <div class="worker-position">Маляр</div>
+                                <div class="status-text not-working">🔴 Не работает</div>
+                            </div>
+                            <div class="status-indicator not-working"></div>
+                        </div>
+                        <div style="text-align: center; margin-top: 16px; padding: 12px; background: #FFEBEE; border-radius: 8px;">
+                            <div style="font-size: 14px; color: #D32F2F; font-weight: 500;">Нажмите для начала смены</div>
+                        </div>
+                    </div>
+                    <div class="sync-status">🌐 Синхронизировано</div>
+                </div>
+            </div>
+            <div class="description">
+                Нажатие на рабочего сразу начинает или завершает смену без дополнительных экранов
+            </div>
+        </div>
+
+        <!-- Slide 4: Add Worker -->
+        <div class="slide">
+            <div class="slide-header">
+                <div class="slide-title">Добавление рабочего</div>
+                <div class="slide-subtitle">Быстрое добавление в команду</div>
+            </div>
+            <div class="phone-mockup" style="margin: 0 auto;">
+                <div class="phone-screen">
+                    <div class="status-bar">
+                        <span>9:41</span>
+                        <span>📶 🔋</span>
+                    </div>
+                    <div class="app-bar">Добавить рабочего</div>
+                    <div class="screen-content">
+                        <div style="font-size: 13px; color: #757575; margin-bottom: 8px;">Имя *</div>
+                        <input type="text" class="input-field" placeholder="Введите имя">
+                        <div style="font-size: 13px; color: #757575; margin-bottom: 8px;">Фамилия</div>
+                        <input type="text" class="input-field" placeholder="Введите фамилию">
+                        <div style="font-size: 13px; color: #757575; margin-bottom: 8px;">Должность</div>
+                        <input type="text" class="input-field" placeholder="Введите должность">
+                        <button class="btn">Сохранить</button>
+                    </div>
+                </div>
+            </div>
+            <div class="description">
+                Простая форма для добавления нового рабочего в команду
+            </div>
+        </div>
+
+        <!-- Slide 5: Move Worker -->
+        <div class="slide">
+            <div class="slide-header">
+                <div class="slide-title">Перенос рабочего</div>
+                <div class="slide-subtitle">Передача рабочего другому бригадиру</div>
+            </div>
+            <div class="phone-mockup" style="margin: 0 auto;">
+                <div class="phone-screen">
+                    <div class="status-bar">
+                        <span>9:41</span>
+                        <span>📶 🔋</span>
+                    </div>
+                    <div class="app-bar">Перенести рабочего</div>
+                    <div class="screen-content">
+                        <div class="card">
+                            <div style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">Иван Петров</div>
+                            <div style="font-size: 14px; color: #757575;">Строитель</div>
+                        </div>
+                        <div style="font-size: 13px; color: #757575; margin-bottom: 8px; margin-top: 16px;">Выберите бригадира</div>
+                        <div class="input-field" style="margin-bottom: 16px;">Михаил Зотов ▼</div>
+                        <button class="btn">Перенести</button>
+                    </div>
+                </div>
+            </div>
+            <div class="description">
+                Бригадир может переносить своих рабочих к другим бригадирам
+            </div>
+        </div>
+
+        <!-- Slide 6: Sync Status -->
+        <div class="slide">
+            <div class="slide-header">
+                <div class="slide-title">Синхронизация</div>
+                <div class="slide-subtitle">Работа офлайн с автоматической синхронизацией</div>
+            </div>
+            <div class="phone-mockup" style="margin: 0 auto;">
+                <div class="phone-screen">
+                    <div class="status-bar">
+                        <span>9:41</span>
+                        <span>📶 🔋</span>
+                    </div>
+                    <div class="app-bar">Настройки</div>
+                    <div class="screen-content">
+                        <div class="card">
+                            <div style="font-size: 16px; font-weight: 500; margin-bottom: 12px;">🔄 Синхронизация</div>
+                            <div style="font-size: 12px; color: #757575; margin-bottom: 4px;">
+                                Автосинхронизация: ВКЛ (приложение само отправляет батчи при появлении интернета)
+                            </div>
+                            <div style="font-size: 12px; color: #757575; margin-bottom: 4px;">
+                                Последняя успешная синхронизация: 30.10.2025 15:30
+                            </div>
+                            <div style="font-size: 12px; color: #757575; margin-bottom: 12px;">
+                                Очередь батчей: 3 (ожидают: 2, неуспешных: 1)
+                            </div>
+                            <button class="btn">Просмотр очереди и ошибок</button>
+                        </div>
+                        <div class="card" style="background: #E8F5E9; margin-top: 16px;">
+                            <div style="font-size: 14px; color: #388E3C; font-weight: 500; margin-bottom: 8px;">✓ Все данные синхронизированы</div>
+                            <div style="font-size: 12px; color: #757575;">Все операции сохранены на сервере</div>
+                        </div>
+                        <div class="card" style="background: #FFF3E0; margin-top: 16px;">
+                            <div style="font-size: 14px; color: #FF6F00; font-weight: 500; margin-bottom: 8px;">⏳ Офлайн режим</div>
+                            <div style="font-size: 12px; color: #757575;">Данные сохраняются локально и синхронизируются при появлении интернета</div>
+                        </div>
+                    </div>
+                    <div class="sync-status" style="color: #D32F2F;">🌐 Офлайн</div>
+                </div>
+            </div>
+            <div class="description">
+                Приложение работает офлайн, все данные сохраняются локально и автоматически синхронизируются при появлении интернета
+            </div>
+        </div>
+
+        <!-- Slide 7: Admin — отчёт «часы за вчера» (MVP) -->
+        <div class="slide">
+            <div class="slide-header">
+                <div class="slide-title">Админ: часы за вчера</div>
+                <div class="slide-subtitle">Раздел «Отчёты» → список (MVP: один пункт) → часы и смены (8 ч) по каждому, включая бригадира</div>
+            </div>
+            <div class="phone-mockup" style="margin: 0 auto;">
+                <div class="phone-screen">
+                    <div class="status-bar">
+                        <span>9:41</span>
+                        <span>📶 🔋</span>
+                    </div>
+                    <div class="app-bar">Отчёты → Часы за вчера</div>
+                    <div class="screen-content">
+                        <div style="font-size: 11px; color: #757575; margin-bottom: 8px;">Список отчётов (1) · дата: 04.03.2026 · GET …/hours-by-worker-previous-day</div>
+                        <div class="card">
+                            <div style="font-size: 14px; font-weight: 600;">Иван Петров</div>
+                            <div style="font-size: 12px; color: #757575;">М. Зотов · 9 ч · 1,125 смены</div>
+                        </div>
+                        <div class="card">
+                            <div style="font-size: 14px; font-weight: 600;">М. Зотов (бригадир)</div>
+                            <div style="font-size: 12px; color: #757575;">8 ч · 1,0 смены</div>
+                        </div>
+                        <div class="card" style="background: #E3F2FD;">
+                            <div style="font-size: 13px; color: #1565C0; font-weight: 600;">Итого: Σ ч · Σ смен (÷8)</div>
+                        </div>
+                    </div>
+                    <div class="sync-status">🌐 Онлайн</div>
+                </div>
+            </div>
+            <div class="description">
+                Смены на сервер — только батчи; отчёт за «вчера»: все строки workers, часы и эквивалент 8-часовых смен.
+            </div>
+        </div>
+
+        <!-- Slide 8: Admin — все рабочие -->
+        <div class="slide">
+            <div class="slide-header">
+                <div class="slide-title">Админ: рабочие</div>
+                <div class="slide-subtitle">Все рабочие, фильтр по бригадиру, перенос</div>
+            </div>
+            <div class="phone-mockup" style="margin: 0 auto;">
+                <div class="phone-screen">
+                    <div class="status-bar">
+                        <span>9:41</span>
+                        <span>📶 🔋</span>
+                    </div>
+                    <div class="app-bar">Все рабочие</div>
+                    <div class="screen-content">
+                        <div style="font-size: 11px; color: #757575; margin-bottom: 8px;">🔍 Поиск · Фильтр: все бригадиры ▼</div>
+                        <div class="card worker-card">
+                            <div class="worker-avatar">👷</div>
+                            <div class="worker-info">
+                                <div class="worker-name">Иван Петров</div>
+                                <div class="worker-position">Строитель · М. Зотов · 🟢</div>
+                            </div>
+                            <span style="font-size: 18px; color: #1976D2;">↗</span>
+                        </div>
+                        <div class="card worker-card">
+                            <div class="worker-avatar">👷</div>
+                            <div class="worker-info">
+                                <div class="worker-name">Алексей Иванов</div>
+                                <div class="worker-position">Плотник · А. Петров · ⚪</div>
+                            </div>
+                            <span style="font-size: 18px; color: #1976D2;">↗</span>
+                        </div>
+                    </div>
+                    <div class="sync-status">🌐 Онлайн · только API</div>
+                </div>
+            </div>
+            <div class="description">
+                Администратор видит всех рабочих по компании, может переназначить бригадира (PATCH) и управлять статусом карточки
+            </div>
+        </div>
+
+        <!-- Slide 9: Admin — пользователи и роли -->
+        <div class="slide">
+            <div class="slide-header">
+                <div class="slide-title">Админ: пользователи</div>
+                <div class="slide-subtitle">Роли USER / FOREMAN / ADMIN</div>
+            </div>
+            <div class="phone-mockup" style="margin: 0 auto;">
+                <div class="phone-screen">
+                    <div class="status-bar">
+                        <span>9:41</span>
+                        <span>📶 🔋</span>
+                    </div>
+                    <div class="app-bar">Пользователи</div>
+                    <div class="screen-content">
+                        <div style="font-size: 11px; color: #757575; margin-bottom: 8px;">🔍 Поиск</div>
+                        <div class="card">
+                            <div style="font-size: 14px; font-weight: 600;">Иван Иванов</div>
+                            <div style="font-size: 12px; color: #757575;">ivan@mail.ru</div>
+                            <div style="margin-top: 6px;"><span style="background: #E3F2FD; color: #1565C0; padding: 2px 6px; border-radius: 4px; font-size: 11px;">FOREMAN</span> <span style="background: #E8F5E9; color: #2E7D32; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Активен</span></div>
+                        </div>
+                        <div class="card">
+                            <div style="font-size: 14px; font-weight: 600;">Мария Сидорова</div>
+                            <div style="font-size: 12px; color: #757575;">marya@mail.ru</div>
+                            <div style="margin-top: 6px;"><span style="background: #F5F5F5; color: #616161; padding: 2px 6px; border-radius: 4px; font-size: 11px;">USER</span> <span style="background: #E8F5E9; color: #2E7D32; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Активен</span></div>
+                        </div>
+                    </div>
+                    <div class="sync-status">Тап → смена роли, блокировка</div>
+                </div>
+            </div>
+            <div class="description">
+                Выдача FOREMAN создаёт запись в workers; снятие роли — по правилам backend (переназначение команды, сессии, токены)
+            </div>
+        </div>
+
+        <!-- Slide 10: Statistics and History -->
+        <div class="slide">
+            <div class="slide-header">
+                <div class="slide-title">Статистика и история</div>
+                <div class="slide-subtitle">Информация по последним сменам и количеству часов</div>
+            </div>
+            <div class="phone-mockup" style="margin: 0 auto;">
+                <div class="phone-screen">
+                    <div class="status-bar">
+                        <span>9:41</span>
+                        <span>📶 🔋</span>
+                    </div>
+                    <div class="app-bar">Статистика</div>
+                    <div class="screen-content">
+                        <div class="stats-card">
+                            <div class="stats-title">📊 Общая статистика</div>
+                            <div class="stat-item">
+                                <span class="stat-label">Всего часов (сегодня)</span>
+                                <span class="stat-value">15.5 ч</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Всего смен (сегодня)</span>
+                                <span class="stat-value">1.937</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Активных смен</span>
+                                <span class="stat-value">2</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Рабочих в команде</span>
+                                <span class="stat-value">3</span>
+                            </div>
+                        </div>
+                        <div class="session-history">
+                            <div style="font-size: 16px; font-weight: 500; margin-bottom: 12px;">📅 Последние смены</div>
+                            <div class="session-item">
+                                <div class="session-date">30.10.2025</div>
+                                <div class="session-info">👷 Иван Петров: 8.0 часов (1.0 смена)</div>
+                            </div>
+                            <div class="session-item">
+                                <div class="session-date">30.10.2025</div>
+                                <div class="session-info">👷 Мария Сидорова: 7.5 часов (0.937 смен)</div>
+                            </div>
+                            <div class="session-item">
+                                <div class="session-date">29.10.2025</div>
+                                <div class="session-info">👷 Иван Петров: 9.0 часов (1.125 смен)</div>
+                            </div>
+                            <div class="session-item">
+                                <div class="session-date">29.10.2025</div>
+                                <div class="session-info">👷 Алексей Иванов: 8.0 часов (1.0 смена)</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sync-status">🌐 Синхронизировано</div>
+                </div>
+            </div>
+            <div class="description">
+                Бригадир видит общую статистику и историю последних смен с количеством часов и смен
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="navigation">
+            <button class="nav-btn" id="prev-btn">← Назад</button>
+            <button class="nav-btn" id="next-btn">Вперед →</button>
+        </div>
+    </div>
+
+    <script>
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        let currentSlide = 0;
+
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function updateSlide() {
+            slides.forEach((slide, index) => {
+                slide.classList.toggle('active', index === currentSlide);
+            });
+            
+            document.getElementById('current-slide').textContent = currentSlide + 1;
+            
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            
+            prevBtn.disabled = currentSlide === 0;
+            nextBtn.disabled = currentSlide === totalSlides - 1;
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                updateSlide();
+            }
+        }
+
+        function previousSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlide();
+            }
+        }
+
+        // Button event listeners (for iOS compatibility)
+        document.addEventListener('DOMContentLoaded', () => {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            
+            // Click events
+            prevBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                previousSlide();
+            });
+            
+            nextBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                nextSlide();
+            });
+            
+            // Touch events for iOS
+            prevBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                previousSlide();
+            });
+            
+            nextBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                nextSlide();
+            });
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') previousSlide();
+            if (e.key === 'ArrowRight') nextSlide();
+        });
+
+        // Touch swipe support for mobile
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, { passive: true });
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const diff = touchStartX - touchEndX;
+            
+            if (Math.abs(diff) > swipeThreshold) {
+                if (diff > 0) {
+                    // Swipe left - next slide
+                    nextSlide();
+                } else {
+                    // Swipe right - previous slide
+                    previousSlide();
+                }
+            }
+        }
+
+        updateSlide();
+    </script>
+</body>
+</html>

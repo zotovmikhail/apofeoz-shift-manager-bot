@@ -1,0 +1,25 @@
+# Локальный PostgreSQL для разработки API.
+# Запуск: docker compose up -d
+# На хосте порт 15432 (внутри контейнера — 5432). 5432/5433 на Windows часто заняты или в excluded port range (Hyper-V).
+# При необходимости поменяй левую часть маппинга, например "25432:5432".
+# JDBC с хоста: jdbc:postgresql://localhost:15432/apofeoz  user/password: apofeoz
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: apofeoz
+      POSTGRES_USER: apofeoz
+      POSTGRES_PASSWORD: apofeoz
+    ports:
+      - "15432:5432"
+    volumes:
+      - apofeoz_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U apofeoz -d apofeoz"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  apofeoz_pg_data:

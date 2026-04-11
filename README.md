@@ -1,261 +1,87 @@
-# Apofeoz Work Manager Bot
+# Apofeoz
 
-Профессиональный Telegram бот для управления рабочими строительной компании и отслеживания рабочего времени.
+Система учёта смен для строительной компании: мобильные клиенты на Kotlin и backend API.
 
-## 🚀 Возможности
+## 📦 Структура проекта
 
-- **Управление прорабами**: Регистрация и управление прорабами
-- **Управление рабочими**: Добавление, просмотр и деактивация рабочих
-- **Управление рабочими сеансами**: Начало и завершение индивидуальных рабочих сеансов
-- **Отслеживание рабочего времени**: Отслеживание времени рабочих с описанием выполняемых работ
-- **Отчеты**: Создание детальных отчетов с несколькими листами (автоматически удаляются после отправки)
-- **Отчеты компании**: Ежедневные отчеты активности всех рабочих для владельца компании (автоматически удаляются после отправки)
-- **Интерактивные кнопки**: Удобный интерфейс с кнопками вместо команд
-- **Хранение в базе данных**: SQLite база данных для сохранения данных
-- **Профессиональное логирование**: Комплексная система логирования
-- **Docker развертывание**: Полная поддержка контейнеризации
+```
+apofeoz-shift-manager/
+├── android/      # Android приложение (Kotlin + Jetpack Compose)
+├── backend/      # Backend API (Kotlin + Ktor)
+└── docs/         # Документация и мокапы
+```
 
-## 📋 Требования
+Подробное описание структуры: `PROJECT_STRUCTURE.md`.
 
-- Docker и Docker Compose
-- Telegram Bot Token (получить от [@BotFather](https://t.me/BotFather))
-- VPS с Ubuntu 20.04+ или Debian 11+ (для продакшн развертывания)
+## 🚀 Компоненты
 
-## 🐳 Быстрый старт с Docker
+### 1. Мобильные приложения (`android/` + KMM)
 
-### 1. Создайте Telegram бота
+Основной клиент — Android‑приложение с офлайн‑режимом и автоматической синхронизацией.
 
-1. Откройте Telegram и найдите [@BotFather](https://t.me/BotFather)
-2. Отправьте команду `/newbot`
-3. Следуйте инструкциям для создания бота
-4. Скопируйте предоставленный токен бота
+**MVP:** вход — **саморегистрация по паролю** (JWT access/refresh); смены на сервер — **только батчами** `sync/batch`; рабочие — **только онлайн**. Подробности в `docs/BACKEND_ARCHITECTURE.md`.
 
-### 2. Настройте бота
+**Технологии (Android):** Kotlin, Jetpack Compose, Room, Retrofit, WorkManager  
+**Потенциал:** вынесение бизнес‑логики в общий Kotlin Multiplatform‑модуль для последующей iOS‑версии.
 
-1. Клонируйте репозиторий:
-   ```bash
-   git clone https://github.com/zotovmikhail/apofeoz-shift-manager-bot.git
-   cd apofeoz-shift-manager-bot
-   ```
+**Документация:** [android/README.md](./android/README.md)  
+**Архитектура и офлайн‑синхронизация:** [docs/MOBILE_ARCHITECTURE.md](./docs/MOBILE_ARCHITECTURE.md)  
+**Мокапы:** [docs/mobile_mockup.html](./docs/mobile_mockup.html)
 
-2. Создайте файл `.env`:
-   ```bash
-   cp env.example .env
-   ```
+### 2. Backend API (`backend/`)
+REST API для мобильных клиентов с поддержкой офлайн‑синхронизации и ролей пользователей.
 
-3. Отредактируйте `.env` и добавьте ваш токен бота:
-   ```env
-   TELEGRAM_BOT_TOKEN=your_actual_bot_token_here
-   ```
+**Технологии:** Kotlin, Ktor, PostgreSQL, Flyway, Exposed
 
-### 3. Запустите бота
+**Документация:** [backend/README.md](./backend/README.md)  
+**Архитектура backend и модель данных:** [docs/BACKEND_ARCHITECTURE.md](./docs/BACKEND_ARCHITECTURE.md)
 
-#### Автоматический деплой (рекомендуется):
+## 📖 Документация
+
+- **Веб-админка (ADMIN, план):** [docs/ADMIN_WEB.md](./docs/ADMIN_WEB.md)
+- **Общая архитектура системы:** [docs/SYSTEM_ARCHITECTURE.md](./docs/SYSTEM_ARCHITECTURE.md)
+- **Архитектура мобильного приложения и синхронизации:** [docs/MOBILE_ARCHITECTURE.md](./docs/MOBILE_ARCHITECTURE.md)
+- **Архитектура backend:** [docs/BACKEND_ARCHITECTURE.md](./docs/BACKEND_ARCHITECTURE.md)
+- **Мокапы UI:** [docs/mobile_mockup.html](./docs/mobile_mockup.html)
+- **План реализации, деплоя и сред test/prod:** [docs/IMPLEMENTATION_DEPLOYMENT_PLAN.md](./docs/IMPLEMENTATION_DEPLOYMENT_PLAN.md)
+- **Чеклист готовности к test/prod и настройка URL в Android:** [docs/DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md)
+- **Для Java/Spring-разработчика:** Kotlin, Ktor и Android в этом репо — [docs/JAVA_SPRING_TO_KOTLIN_KTOR_ANDROID.md](./docs/JAVA_SPRING_TO_KOTLIN_KTOR_ANDROID.md)
+- **План реализации мобильного клиента (детали, частично устарел):** [docs/MOBILE_IMPLEMENTATION_PLAN.md](./docs/MOBILE_IMPLEMENTATION_PLAN.md)
+- **Примеры кода:** [docs/CODE_EXAMPLES.md](./docs/CODE_EXAMPLES.md)
+- **Структура проекта:** [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)
+
+## 👨‍💻 Для агентского режима (Cursor/AI)
+
+- **Где искать архитектуру и соглашения:**
+  - общая картина — `docs/SYSTEM_ARCHITECTURE.md`;
+  - мобильные клиенты и офлайн‑синхронизация — `docs/MOBILE_ARCHITECTURE.md`;
+  - backend и модель БД — `docs/BACKEND_ARCHITECTURE.md`;
+  - структура репозитория — `PROJECT_STRUCTURE.md`;
+  - переход с Spring/Java — `docs/JAVA_SPRING_TO_KOTLIN_KTOR_ANDROID.md`.
+- **Основные точки входа в код:**
+  - backend: `backend/src/main/kotlin/com/apofeoz/backend/…`;
+  - android: `android/app/src/main/java/com/apofeoz/shiftmanager/…`.
+
+## 🛠 Быстрый старт
+
+### Android App
 ```bash
-# Сделайте скрипт исполняемым и запустите
-chmod +x deploy.sh
-./deploy.sh
+cd android
+# Скопируйте local.properties → local.properties, укажите sdk.dir
+# Откройте android/ в Android Studio → Run
 ```
 
-#### Ручной деплой:
+### Backend API
 ```bash
-# Запустите с помощью Docker Compose
-docker-compose up -d
-
-# Проверьте логи
-docker-compose logs -f
+cd backend
+docker compose up -d   # или свой Postgres
+.\gradlew.bat run      # Windows; см. backend/README.md
 ```
 
-📖 **Подробная инструкция по деплою:** [DEPLOYMENT.md](DEPLOYMENT.md)
+## 📝 Лицензия
 
-Бот запустится и начнет слушать сообщения. Вы можете протестировать его, отправив `/start` вашему боту.
+[Укажите лицензию]
 
-## 🚀 Продакшн развертывание
+## 👥 Авторы
 
-Для развертывания на VPS (например, Timeweb Cloud) используйте наш автоматизированный скрипт:
-
-```bash
-# Запустите скрипт развертывания
-chmod +x docker-deploy.sh
-./docker-deploy.sh
-```
-
-Подробные инструкции по развертыванию см. в [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md).
-
-## 📁 Структура проекта
-
-```
-apofeoz-shift-manager-bot/
-├── bot.py                 # Основное приложение бота
-├── models.py              # Модели базы данных и менеджеры
-├── report_generator.py    # Создание отчетов
-├── requirements.txt       # Python зависимости
-├── Dockerfile            # Docker образ
-├── docker-compose.yml    # Docker Compose конфигурация
-├── docker-deploy.sh      # Скрипт автоматического развертывания
-├── env.example           # Шаблон переменных окружения
-├── .env                  # Переменные окружения (создается локально)
-├── .gitignore           # Git ignore файл
-├── .dockerignore        # Docker ignore файл
-├── README.md            # Этот файл
-├── DOCKER_DEPLOYMENT.md # Подробное руководство по развертыванию
-├── DOCKER_QUICK.md      # Быстрая справка по Docker
-├── handlers/            # Обработчики команд и сообщений
-│   ├── __init__.py
-│   ├── command_handlers.py
-│   └── message_handlers.py
-└── utils/               # Утилиты
-    ├── __init__.py
-    └── logger.py
-```
-
-## 🤖 Доступные команды
-
-### Управление прорабами
-- `/register` - Зарегистрироваться как прораб
-- `/start` - Главное меню с кнопками
-- `/help` - Справка по использованию
-
-### Управление рабочими
-- Добавление рабочих через интерактивное меню
-- Просмотр списка рабочих через кнопки
-- Деактивация рабочих через кнопки (с валидацией активных сеансов)
-
-### Управление рабочими сеансами
-- Начало рабочих сеансов через кнопки (с валидацией дублирования)
-- Завершение рабочих сеансов через кнопки
-- Просмотр активных сеансов
-- Добавление заметок при начале сеанса
-
-### Отчетность
-- Создание отчетов через кнопки
-- Отчеты прорабов с данными их рабочих
-- Отчеты компании с ежедневной активностью всех рабочих
-- Автоматическое удаление отчетов после отправки
-
-## 🔧 Управление Docker
-
-### Основные команды
-
-```bash
-# Запуск бота
-docker-compose up -d
-
-# Остановка бота
-docker-compose down
-
-# Перезапуск бота
-docker-compose restart
-
-# Просмотр логов
-docker-compose logs -f
-
-# Проверка статуса
-docker-compose ps
-
-# Пересборка и перезапуск (после изменений кода)
-docker-compose up -d --build
-```
-
-### Мониторинг
-
-```bash
-# Проверка использования ресурсов
-docker stats apofeoz-work-manager-bot
-
-# Проверка здоровья контейнера
-docker inspect apofeoz-work-manager-bot | grep Health
-
-# Просмотр детальной информации
-docker inspect apofeoz-work-manager-bot
-```
-
-## 🔒 Безопасность
-
-- **Не-root пользователь**: Контейнер запускается от имени непривилегированного пользователя
-- **Изолированная сеть**: Используется пользовательская Docker сеть
-- **Ограничения ресурсов**: Установлены лимиты памяти и CPU
-- **Проверка здоровья**: Встроенные health checks
-- **Автоматическое удаление отчетов**: Чувствительные данные не сохраняются на диске
-
-## 📊 Мониторинг и логирование
-
-- **Структурированные логи**: Логирование с временными метками и уровнями
-- **Health checks**: Автоматическая проверка состояния бота
-- **Мониторинг ресурсов**: Отслеживание использования CPU и памяти
-- **Автоматические бэкапы**: Резервное копирование базы данных
-
-## 🔄 Обновления
-
-```bash
-# Обновление кода
-git pull origin main
-
-# Пересборка и перезапуск
-docker-compose up -d --build
-
-# Проверка успешности обновления
-docker-compose logs --tail=20
-```
-
-## 🚨 Устранение неполадок
-
-### Бот не запускается
-```bash
-# Проверьте логи
-docker-compose logs
-
-# Проверьте переменные окружения
-cat .env
-
-# Проверьте статус контейнера
-docker ps -a
-```
-
-### Проблемы с правами доступа
-```bash
-# Исправьте права доступа
-sudo chown -R $USER:$USER ./data ./logs ./backups
-
-# Проверьте права в контейнере
-docker-compose exec apofeoz-bot ls -la /app/
-```
-
-### Проблемы с базой данных
-```bash
-# Проверьте файл базы данных
-ls -la ./data/
-
-# Создайте резервную копию и пересоздайте
-cp ./data/apofeoz_shifts.db ./data/apofeoz_shifts.db.backup
-rm ./data/apofeoz_shifts.db
-docker-compose restart
-```
-
-## 📞 Поддержка
-
-Если вы столкнулись с проблемами:
-
-1. **Проверьте логи**: `docker-compose logs`
-2. **Убедитесь в правильности токена**: Проверьте файл `.env`
-3. **Проверьте подключение**: `docker-compose exec apofeoz-bot ping api.telegram.org`
-4. **Проверьте ресурсы**: `docker stats`
-5. **Обратитесь к руководству**: [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md)
-
-## 🔗 Полезные ссылки
-
-- [Docker Documentation](https://docs.docker.com/)
-- [Docker Compose Documentation](https://docs.docker.com/compose/)
-- [python-telegram-bot Documentation](https://python-telegram-bot.readthedocs.io/)
-- [Telegram Bot API](https://core.telegram.org/bots/api)
-- [BotFather](https://t.me/BotFather) - Создание и управление ботами
-
-## 📄 Лицензия
-
-Этот проект лицензирован под MIT License - см. файл LICENSE для деталей.
-
----
-
-**Готово к развертыванию! 🚀**
-
-Для быстрого развертывания на VPS используйте `./docker-deploy.sh`
+[Укажите авторов]

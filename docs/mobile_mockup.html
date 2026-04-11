@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Апеофеоз — мобильный мокап</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #E5E5E5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .phone-container {
+            width: 375px;
+            height: 812px;
+            background: #000;
+            border-radius: 40px;
+            padding: 8px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: #F5F5F5;
+            border-radius: 32px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: #F5F5F5;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .status-bar {
+            height: 44px;
+            background: #1976D2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .app-bar {
+            height: 56px;
+            background: #1976D2;
+            color: white;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .app-bar .back-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            margin-right: 16px;
+            padding: 8px;
+        }
+
+        .app-bar .title {
+            flex: 1;
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        .app-bar .action-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+            margin-left: 8px;
+        }
+
+        .content {
+            padding: 16px;
+            padding-bottom: 80px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .card-icon {
+            font-size: 24px;
+            margin-right: 12px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #212121;
+        }
+
+        .card-subtitle {
+            font-size: 14px;
+            color: #757575;
+            margin-top: 4px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-label {
+            font-size: 14px;
+            color: #757575;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #1976D2;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 12px;
+        }
+
+        .btn-primary {
+            background: #1976D2;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1565C0;
+        }
+
+        .btn-secondary {
+            background: #FF6F00;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #E65100;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #1976D2;
+            color: #1976D2;
+        }
+
+        .btn-outline:hover {
+            background: #E3F2FD;
+        }
+
+        .icon-btn {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 1px solid #1976D2;
+            background: #fff;
+            color: #1976D2;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 0;
+        }
+
+        .icon-btn:hover {
+            background: #E3F2FD;
+        }
+
+        .worker-card {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            position: relative;
+        }
+
+        .worker-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #1976D2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            margin-right: 16px;
+        }
+
+        .worker-info {
+            flex: 1;
+        }
+
+        .worker-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: #212121;
+            margin-bottom: 4px;
+        }
+
+        .worker-position {
+            font-size: 14px;
+            color: #757575;
+            margin-bottom: 4px;
+        }
+
+        .status-indicator {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .status-indicator.working {
+            background: #388E3C;
+            box-shadow: 0 0 8px rgba(56, 142, 60, 0.5);
+        }
+
+        .status-indicator.not-working {
+            background: #D32F2F;
+        }
+
+        .status-text {
+            font-size: 12px;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        .status-text.working {
+            color: #388E3C;
+        }
+
+        .status-text.not-working {
+            color: #D32F2F;
+        }
+
+        .session-duration {
+            font-size: 13px;
+            color: #1976D2;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        .fab {
+            position: fixed;
+            bottom: 80px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #1976D2;
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .fab:hover {
+            background: #1565C0;
+        }
+
+        .sync-status {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 12px;
+            text-align: center;
+            border-top: 1px solid #E0E0E0;
+            font-size: 14px;
+            color: #757575;
+        }
+
+        .sync-status.online {
+            color: #388E3C;
+        }
+
+        .sync-status.offline {
+            color: #D32F2F;
+        }
+
+        .login-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 40px 24px;
+        }
+
+        .logo {
+            font-size: 48px;
+            margin-bottom: 24px;
+        }
+
+        .app-name {
+            font-size: 24px;
+            font-weight: 500;
+            color: #212121;
+            margin-bottom: 48px;
+            text-align: center;
+        }
+
+        .role-selector {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .role-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #1976D2;
+            border-radius: 8px;
+            background: white;
+            color: #1976D2;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .role-btn:hover {
+            background: #E3F2FD;
+        }
+
+        .role-btn.active {
+            background: #1976D2;
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #757575;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .empty-state-text {
+            font-size: 16px;
+            margin-bottom: 24px;
+        }
+
+        .toast {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #323232;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: #388E3C;
+        }
+
+        .toast.error {
+            background: #D32F2F;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-container">
+        <div class="phone-screen">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>📶 📶 🔋</span>
+            </div>
+
+            <!-- Screen 1: Login -->
+            <div class="screen active" id="login">
+                    <div class="login-container">
+                    <div class="logo">🏗️</div>
+                    <div class="app-name">Апеофеоз</div>
+                    <div class="input-group" style="width: 100%; max-width: 320px;">
+                        <input type="text" class="input-field" placeholder="Телефон / Email" id="login-email">
+                    </div>
+                    <div class="input-group" style="width: 100%; max-width: 320px;">
+                        <input type="password" class="input-field" placeholder="Пароль" id="login-password">
+                    </div>
+                    <button class="btn btn-primary" onclick="login()">Войти</button>
+                </div>
+            </div>
+
+            <!-- Screen 2: Foreman Home (Workers List) -->
+            <div class="screen" id="foreman-home">
+                <div class="app-bar">
+                    <button class="back-btn" onclick="showScreen('login')">☰</button>
+                    <div class="title">Мои рабочие</div>
+                    <button class="action-btn" onclick="showScreen('settings')">⚙️</button>
+                </div>
+                <div class="content">
+                    <div style="font-size: 14px; color: #757575; margin-bottom: 16px; text-align: center;">
+                        🟢 - Работает сейчас | 🔴 - Не работает<br>
+                        Нажмите на рабочего для управления сменой
+                    </div>
+                    <div class="card worker-card" onclick="toggleWorkerSession(0)">
+                        <div class="worker-avatar">👷</div>
+                        <div class="worker-info">
+                            <div class="worker-name">Вы (бригадир)</div>
+                            <div class="worker-position">Бригадир</div>
+                            <div class="status-text not-working">🔴 Не работает</div>
+                        </div>
+                        <div class="status-indicator not-working"></div>
+                    </div>
+                    <div class="card worker-card" onclick="toggleWorkerSession(1)">
+                        <div class="worker-avatar">👷</div>
+                        <div class="worker-info">
+                            <div class="worker-name">Иван Петров</div>
+                            <div class="worker-position">Строитель</div>
+                            <div class="status-text working">🟢 Работает сейчас</div>
+                            <div class="session-duration">⏳ Длительность: 2ч 15м</div>
+                        </div>
+                        <div class="status-indicator working"></div>
+                    </div>
+                    <div class="card worker-card" onclick="toggleWorkerSession(2)">
+                        <div class="worker-avatar">👷</div>
+                        <div class="worker-info">
+                            <div class="worker-name">Мария Сидорова</div>
+                            <div class="worker-position">Маляр</div>
+                            <div class="status-text not-working">🔴 Не работает</div>
+                        </div>
+                        <div class="status-indicator not-working"></div>
+                    </div>
+                    <div class="card worker-card" onclick="toggleWorkerSession(3)">
+                        <div class="worker-avatar">👷</div>
+                        <div class="worker-info">
+                            <div class="worker-name">Алексей Иванов</div>
+                            <div class="worker-position">Плотник</div>
+                            <div class="status-text not-working">🔴 Не работает</div>
+                        </div>
+                        <div class="status-indicator not-working"></div>
+                    </div>
+                    <div class="card worker-card" onclick="toggleWorkerSession(4)">
+                        <div class="worker-avatar">👷</div>
+                        <div class="worker-info">
+                            <div class="worker-name">Петр Смирнов</div>
+                            <div class="worker-position">Электрик</div>
+                            <div class="status-text working">🟢 Работает сейчас</div>
+                            <div class="session-duration">⏳ Длительность: 45м</div>
+                        </div>
+                        <div class="status-indicator working"></div>
+                    </div>
+                </div>
+                <button class="fab" onclick="showScreen('add-worker')" title="Добавить рабочего">➕</button>
+                <div class="sync-status online">🌐 Синхронизировано</div>
+            </div>
+
+            <!-- Screen 3: Admin Home (Reports) -->
+            <div class="screen" id="admin-home">
+                <div class="app-bar">
+                    <button class="back-btn" onclick="showScreen('login')">☰</button>
+                    <div class="title">Админ панель</div>
+                    <button class="action-btn" onclick="showScreen('settings')">⚙️</button>
+                </div>
+                <div class="content">
+                    <div class="card" onclick="showScreen('admin-reports')">
+                        <div class="card-header">
+                            <span class="card-icon">📊</span>
+                            <div>
+                                <div class="card-title">Отчёты</div>
+                                <div class="card-subtitle">Список отчётов — пока доступен один</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card" onclick="showScreen('admin-workers')">
+                        <div class="card-header">
+                            <span class="card-icon">👥</span>
+                            <div>
+                                <div class="card-title">Рабочие</div>
+                                <div class="card-subtitle">Управление и перенос между бригадирами</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card" onclick="showScreen('admin-users')">
+                        <div class="card-header">
+                            <span class="card-icon">👤</span>
+                            <div>
+                                <div class="card-title">Пользователи</div>
+                                <div class="card-subtitle">Роли USER / FOREMAN / ADMIN</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card" onclick="showScreen('settings')">
+                        <div class="card-header">
+                            <span class="card-icon">⚙️</span>
+                            <div>
+                                <div class="card-title">Настройки</div>
+                                <div class="card-subtitle">Профиль и синхронизация</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="sync-status online">🌐 Синхронизировано</div>
+            </div>
+
+            <!-- Screen 4: Add Worker -->
+            <div class="screen" id="add-worker">
+                <div class="app-bar">
+                    <button class="back-btn" onclick="showScreen('foreman-home')">←</button>
+                    <div class="title">Добавить рабочего</div>
+                </div>
+                <div class="content">
+                    <div class="input-group">
+                        <label class="input-label">Имя *</label>
+                        <input type="text" class="input-field" placeholder="Введите имя">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Фамилия</label>
+                        <input type="text" class="input-field" placeholder="Введите фамилию">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Должность</label>
+                        <input type="text" class="input-field" placeholder="Введите должность">
+                    </div>
+                    <button class="btn btn-primary" onclick="addWorker()">Сохранить</button>
+                </div>
+            </div>
+
+            <!-- Screen 5: Move Worker -->
+            <div class="screen" id="move-worker">
+                <div class="app-bar">
+                    <button class="back-btn" onclick="showScreen('foreman-home')">←</button>
+                    <div class="title">Перенести рабочего</div>
+                </div>
+                <div class="content">
+                    <div class="card">
+                        <div style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">Иван Петров</div>
+                        <div style="font-size: 14px; color: #757575;">Строитель</div>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Выберите бригадира</label>
+                        <select class="input-field">
+                            <option>Михаил Зотов</option>
+                            <option>Александр Петров</option>
+                            <option>Дмитрий Сидоров</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="moveWorker()">Перенести</button>
+                </div>
+            </div>
+
+            <!-- Screen 5b: Admin — список отчётов (MVP: один пункт) -->
+            <div class="screen" id="admin-reports">
+                <div class="app-bar">
+                    <button class="back-btn" onclick="showScreen('admin-home')">←</button>
+                    <div class="title">Отчёты</div>
+                </div>
+                <div class="content">
+                    <div style="font-size: 13px; color: #757575; margin-bottom: 12px;">Выберите отчёт. Позже здесь появятся другие типы.</div>
+                    <div class="card" onclick="showScreen('hours-yesterday-report')">
+                        <div class="card-header">
+                            <span class="card-icon">⏱️</span>
+                            <div>
+                                <div class="card-title">Часы за вчера</div>
+                                <div class="card-subtitle">По каждому работнику · часы и смены (8 ч = 1), включая бригадиров</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="sync-status online">🌐 Синхронизировано</div>
+            </div>
+
+            <!-- Screen 6: Admin — часы по работникам за предыдущий календарный день (MVP) -->
+            <div class="screen" id="hours-yesterday-report">
+                <div class="app-bar">
+                    <button class="back-btn" onclick="showScreen('admin-reports')">←</button>
+                    <div class="title">Часы за вчера</div>
+                </div>
+                <div class="content">
+                    <div class="card" style="margin-bottom: 12px;">
+                        <div style="font-size: 13px; color: #757575;">Дата отчёта («вчера», TZ сервера):</div>
+                        <div style="font-size: 16px; font-weight: 600; margin-top: 4px;">04.03.2026</div>
+                        <div style="font-size: 12px; color: #9E9E9E; margin-top: 8px;">Норма смены: 8 ч · GET …/hours-by-worker-previous-day</div>
+                    </div>
+                    <div class="card">
+                        <div style="font-size: 14px; font-weight: 500; margin-bottom: 4px;">👷 Иван Петров</div>
+                        <div style="font-size: 13px; color: #757575;">Бригадир: Михаил Зотов</div>
+                        <div style="font-size: 13px; color: #1976D2; margin-top: 4px;">⏱️ 9.0 ч · 📊 1,125 смены</div>
+                    </div>
+                    <div class="card">
+                        <div style="font-size: 14px; font-weight: 500; margin-bottom: 4px;">👷 Мария Сидорова</div>
+                        <div style="font-size: 13px; color: #757575;">Бригадир: Михаил Зотов</div>
+                        <div style="font-size: 13px; color: #1976D2; margin-top: 4px;">⏱️ 7.5 ч · 📊 0,938 смены</div>
+                    </div>
+                    <div class="card">
+                        <div style="font-size: 14px; font-weight: 500; margin-bottom: 4px;">👷 Михаил Зотов <span style="font-size: 11px; color: #1565C0;">(бригадир)</span></div>
+                        <div style="font-size: 13px; color: #757575;">Своя карточка в workers — в отчёте как у всех</div>
+                        <div style="font-size: 13px; color: #1976D2; margin-top: 4px;">⏱️ 8.0 ч · 📊 1,0 смены</div>
+                    </div>
+                    <div class="card">
+                        <div style="font-size: 14px; font-weight: 500; margin-bottom: 4px;">👷 Алексей Иванов</div>
+                        <div style="font-size: 13px; color: #757575;">Бригадир: Александр Петров</div>
+                        <div style="font-size: 13px; color: #757575; margin-top: 4px;">⏱️ 0 ч · 📊 0 смен (нет закрытых смен за день)</div>
+                    </div>
+                    <div class="card" style="background: #E3F2FD; margin-top: 8px;">
+                        <div style="font-size: 14px; color: #1976D2; font-weight: 500;">Итого: 24.5 ч · 3,063 смены</div>
+                    </div>
+                    <button class="btn btn-outline" onclick="showToast('Обновить данные с сервера')">🔄 Обновить</button>
+                </div>
+            </div>
+
+            <!-- Screen 9: Admin Users (roles) -->
+            <div class="screen" id="admin-users">
+                <div class="app-bar">
+                    <button class="back-btn" onclick="showScreen('admin-home')">←</button>
+                    <div class="title">Пользователи</div>
+                </div>
+                <div class="content">
+                    <input type="text" class="input-field" placeholder="🔍 Поиск email / телефон / имя" style="margin-bottom: 12px;">
+                    <div class="card" onclick="showScreen('admin-user-detail')" style="cursor: pointer;">
+                        <div style="font-size: 15px; font-weight: 600; margin-bottom: 4px;">Иван Иванов</div>
+                        <div style="font-size: 13px; color: #757575; margin-bottom: 8px;">ivan@mail.ru</div>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <span style="background: #E3F2FD; color: #1565C0; padding: 2px 8px; border-radius: 4px; font-size: 12px;">FOREMAN</span>
+                            <span style="background: #E8F5E9; color: #2E7D32; padding: 2px 8px; border-radius: 4px; font-size: 12px;">Активен</span>
+                        </div>
+                    </div>
+                    <div class="card" onclick="showToast('Откроется карточка пользователя')" style="cursor: pointer;">
+                        <div style="font-size: 15px; font-weight: 600; margin-bottom: 4px;">Пётр Админов</div>
+                        <div style="font-size: 13px; color: #757575; margin-bottom: 8px;">+7 900 000-00-00</div>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <span style="background: #FFEBEE; color: #C62828; padding: 2px 8px; border-radius: 4px; font-size: 12px;">ADMIN</span>
+                            <span style="background: #E8F5E9; color: #2E7D32; padding: 2px 8px; border-radius: 4px; font-size: 12px;">Активен</span>
+                        </div>
+                    </div>
+                    <div class="card" onclick="showToast('Откроется карточка пользователя')" style="cursor: pointer;">
+                        <div style="font-size: 15px; font-weight: 600; margin-bottom: 4px;">Мария Сидорова</div>
+                        <div style="font-size: 13px; color: #757575; margin-bottom: 8px;">marya@mail.ru</div>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <span style="background: #F5F5F5; color: #616161; padding: 2px 8px; border-radius: 4px; font-size: 12px;">USER</span>
+                            <span style="background: #E8F5E9; color: #2E7D32; padding: 2px 8px; border-radius: 4px; font-size: 12px;">Активен</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Screen 9b: Admin User detail (role) -->
+            <div class="screen" id="admin-user-detail">
+                <div class="app-bar">
+                    <button class="back-btn" onclick="showScreen('admin-users')">←</button>
+                    <div class="title">Иван Иванов</div>
+                </div>
+                <div class="content">
+                    <div class="card">
+                        <div style="font-size: 13px; color: #757575;">Имя · Фамилия</div>
+                        <div style="font-size: 15px; margin-bottom: 8px;">Иван Иванов</div>
+                        <div style="font-size: 13px; color: #757575;">Email</div>
+                        <div style="font-size: 15px; margin-bottom: 8px;">ivan@mail.ru</div>
+                        <div style="font-size: 13px; color: #757575;">Статус</div>
+                        <div style="font-size: 15px;">🟢 Активен</div>
+                    </div>
+                    <div style="font-size: 14px; font-weight: 500; margin: 16px 0 8px;">Роль</div>
+                    <div class="card">
+                        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                            <input type="radio" name="admin-role"> USER
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                            <input type="radio" name="admin-role" checked> FOREMAN
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="radio" name="admin-role"> ADMIN
+                        </label>
+                    </div>
+                    <button class="btn btn-primary" onclick="showToast('PATCH /api/v1/users/{id}'); showScreen('admin-users')">Сохранить роль</button>
+                    <button class="btn btn-outline" style="margin-top: 12px; color: #D32F2F; border-color: #D32F2F;" onclick="showToast('INACTIVE + отзыв refresh')">Заблокировать пользователя</button>
+                </div>
+            </div>
+
+            <!-- Screen 10: Admin Workers -->
+            <div class="screen" id="admin-workers">
+                <div class="app-bar">
+                    <button class="back-btn" onclick="showScreen('admin-home')">←</button>
+                    <div class="title">Все рабочие</div>
+                </div>
+                <div class="content">
+                    <input type="text" class="input-field" placeholder="🔍 Поиск по имени / должности" style="margin-bottom: 8px;">
+                    <div style="font-size: 12px; color: #757575; margin-bottom: 12px;">Фильтр: <select class="input-field" style="display: inline-block; width: auto; min-width: 160px; padding: 6px 8px;"><option>Все бригадиры</option><option>Михаил Зотов</option><option>Александр Петров</option></select></div>
+                    <div class="card worker-card">
+                        <div class="worker-avatar">👷</div>
+                        <div class="worker-info">
+                            <div class="worker-name">Иван Петров</div>
+                            <div class="worker-position">Строитель</div>
+                            <div style="font-size: 12px; color: #616161; margin-top: 4px;">Бригадир: Михаил Зотов · 🟢 Активен</div>
+                        </div>
+                        <button type="button" class="icon-btn" onclick="event.stopPropagation(); showScreen('admin-reassign-worker')" title="Перенести">↗</button>
+                    </div>
+                    <div class="card worker-card">
+                        <div class="worker-avatar">👷</div>
+                        <div class="worker-info">
+                            <div class="worker-name">Мария Сидорова</div>
+                            <div class="worker-position">Маляр</div>
+                            <div style="font-size: 12px; color: #616161; margin-top: 4px;">Бригадир: Михаил Зотов · 🟢 Активен</div>
+                        </div>
+                        <button type="button" class="icon-btn" onclick="event.stopPropagation(); showScreen('admin-reassign-worker')" title="Перенести">↗</button>
+                    </div>
+                    <div class="card worker-card">
+                        <div class="worker-avatar">👷</div>
+                        <div class="worker-info">
+                            <div class="worker-name">Алексей Иванов</div>
+                            <div class="worker-position">Плотник</div>
+                            <div style="font-size: 12px; color: #616161; margin-top: 4px;">Бригадир: А. Петров · ⚪ Неактивен</div>
+                        </div>
+                        <button type="button" class="icon-btn" onclick="event.stopPropagation(); showScreen('admin-reassign-worker')" title="Перенести">↗</button>
+                    </div>
+                    <div style="font-size: 12px; color: #757575; margin-top: 12px;">Меню ⋯: перенос, детали, деактивировать — в полном UI</div>
+                </div>
+            </div>
+
+            <!-- Screen 10b: Admin reassign worker -->
+            <div class="screen" id="admin-reassign-worker">
+                <div class="app-bar">
+                    <button class="back-btn" onclick="showScreen('admin-workers')">←</button>
+                    <div class="title">Перенос рабочего</div>
+                </div>
+                <div class="content">
+                    <div class="card">
+                        <div style="font-size: 16px; font-weight: 500; margin-bottom: 4px;">Иван Петров</div>
+                        <div style="font-size: 14px; color: #757575;">Строитель · сейчас у Михаила Зотова</div>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Новый бригадир</label>
+                        <select class="input-field">
+                            <option>Александр Петров</option>
+                            <option>Михаил Зотов</option>
+                            <option>Дмитрий Сидоров</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="showToast('PATCH workers/{id} foreman_id'); showScreen('admin-workers')">Перенести</button>
+                </div>
+            </div>
+
+            <!-- Screen 11: Settings -->
+            <div class="screen" id="settings">
+                <div class="app-bar">
+                    <button class="back-btn" onclick="goBack()">←</button>
+                    <div class="title">Настройки</div>
+                </div>
+                <div class="content">
+                    <div class="card">
+                        <div style="font-size: 16px; font-weight: 500; margin-bottom: 4px;">👤 Профиль</div>
+                        <div style="font-size: 14px; color: #757575;">Имя: Иван | Роль: <span id="user-role">Бригадир</span></div>
+                    </div>
+                    <div class="card">
+                        <div style="font-size: 16px; font-weight: 500; margin-bottom: 12px;">🔄 Синхронизация</div>
+                        <div style="font-size: 12px; color: #757575; margin-bottom: 8px;">
+                            Автосинхронизация: ВКЛ (управляется автоматически приложением)
+                        </div>
+                        <div style="font-size: 12px; color: #757575; margin-bottom: 8px;">
+                            Последняя успешная синхронизация: <span id="last-sync-time">30.10.2025 15:30</span><br>
+                            Статус очереди: <span id="queue-status-text">все батчи применены</span>
+                        </div>
+                        <button class="btn btn-outline">Просмотр очереди и ошибок</button>
+                    </div>
+                    <div class="card">
+                        <div style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">⚠️ Неуспешные синхронизации</div>
+                        <div id="failed-batches-empty" style="font-size: 13px; color: #757575; margin-bottom: 8px;">
+                            Все батчи успешно применены на сервере.
+                        </div>
+                        <div id="failed-batches-list" style="display: none; font-size: 13px; color: #424242; margin-bottom: 12px;">
+                            <!-- Пример строки: -->
+                            <!-- <div>batch_uid=... · 2 события · причина: worker not found</div> -->
+                        </div>
+                        <button class="btn btn-outline" onclick="showToast('Откроется экран с деталями батчей и возможностью их отредактировать')">
+                            📄 Открыть список батчей
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div style="font-size: 16px; font-weight: 500; margin-bottom: 4px;">📱 О приложении</div>
+                        <div style="font-size: 14px; color: #757575;">Версия: 1.0.0</div>
+                    </div>
+                    <button class="btn btn-outline" style="color: #D32F2F; border-color: #D32F2F;" onclick="showScreen('login')">🚪 Выйти</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let currentRole = 'foreman'; // 'foreman' or 'admin'
+        let workerStates = {
+            1: { working: true, startTime: Date.now() - 8100000 }, // 2ч 15м назад
+            2: { working: false },
+            3: { working: false },
+            4: { working: true, startTime: Date.now() - 2700000 } // 45м назад
+        };
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function login() {
+            // Simulate login - show appropriate home screen based on role
+            if (currentRole === 'foreman') {
+                showScreen('foreman-home');
+            } else {
+                showScreen('admin-home');
+            }
+            showToast('Вход выполнен', 'success');
+        }
+
+        function toggleWorkerSession(workerId) {
+            const worker = workerStates[workerId];
+            if (worker.working) {
+                // Stop session
+                worker.working = false;
+                showToast('Смена завершена', 'success');
+            } else {
+                // Start session
+                worker.working = true;
+                worker.startTime = Date.now();
+                showToast('Смена начата', 'success');
+            }
+            // Update UI
+            updateWorkerCard(workerId);
+        }
+
+        function updateWorkerCard(workerId) {
+            const worker = workerStates[workerId];
+            const cards = document.querySelectorAll('.worker-card');
+            // In real app, this would update the specific card
+            // For demo, just reload the screen
+            setTimeout(() => {
+                showScreen('foreman-home');
+            }, 500);
+        }
+
+        function addWorker() {
+            showToast('Рабочий добавлен', 'success');
+            setTimeout(() => {
+                showScreen('foreman-home');
+            }, 500);
+        }
+
+        function moveWorker() {
+            showToast('Рабочий перенесен', 'success');
+            setTimeout(() => {
+                showScreen('foreman-home');
+            }, 500);
+        }
+
+        function goBack() {
+            if (currentRole === 'foreman') {
+                showScreen('foreman-home');
+            } else {
+                showScreen('admin-home');
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        // Simulate network status
+        setInterval(() => {
+            const status = Math.random() > 0.3 ? 'Онлайн' : 'Офлайн';
+            document.getElementById('network-status').textContent = status;
+        }, 5000);
+
+        // Update session durations
+        setInterval(() => {
+            Object.keys(workerStates).forEach(id => {
+                const worker = workerStates[id];
+                if (worker.working && worker.startTime) {
+                    const duration = Date.now() - worker.startTime;
+                    const hours = Math.floor(duration / 3600000);
+                    const minutes = Math.floor((duration % 3600000) / 60000);
+                    // Update duration display if needed
+                }
+            });
+        }, 1000);
+
+        // Role selector (for demo - switch between foreman and admin)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'a' || e.key === 'A') {
+                currentRole = 'admin';
+                document.getElementById('user-role').textContent = 'Админ';
+                if (document.getElementById('admin-home').classList.contains('active')) {
+                    showScreen('admin-home');
+                }
+            } else if (e.key === 'f' || e.key === 'F') {
+                currentRole = 'foreman';
+                document.getElementById('user-role').textContent = 'Бригадир';
+                if (document.getElementById('foreman-home').classList.contains('active')) {
+                    showScreen('foreman-home');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

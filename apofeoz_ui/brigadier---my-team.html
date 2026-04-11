@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BrigadierMyTeam</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+    <style type="text/tailwindcss">
+      @theme inline {
+        --color-background: var(--background);
+        --color-foreground: var(--foreground);
+        --color-primary: var(--primary);
+        --color-primary-foreground: var(--primary-foreground);
+        --color-secondary: var(--secondary);
+        --color-secondary-foreground: var(--secondary-foreground);
+        --color-muted: var(--muted);
+        --color-muted-foreground: var(--muted-foreground);
+        --color-accent: var(--accent);
+        --color-accent-foreground: var(--accent-foreground);
+        --color-destructive: var(--destructive);
+        --color-card: var(--card);
+        --color-card-foreground: var(--card-foreground);
+        --color-popover: var(--popover);
+        --color-popover-foreground: var(--popover-foreground);
+        --color-border: var(--border);
+        --color-input: var(--input);
+        --color-ring: var(--ring);
+        --color-chart-1: var(--chart-1);
+        --color-chart-2: var(--chart-2);
+        --color-chart-3: var(--chart-3);
+        --color-chart-4: var(--chart-4);
+        --color-chart-5: var(--chart-5);
+
+        --font-font-sans: var(--font-sans);
+        --font-font-heading: var(--font-heading);
+        --font-font-serif: var(--font-serif);
+        --font-font-mono: var(--font-mono);
+
+        --radius-sm: calc(var(--radius) - 4px);
+        --radius-md: calc(var(--radius) - 2px);
+        --radius-lg: var(--radius);
+        --radius-xl: calc(var(--radius) + 4px);
+      }
+
+      :root {
+          --background: #0d0d0d;
+        --foreground: #f8fafc;
+        --primary: #d4af37;
+        --primary-foreground: #0d0d0d;
+        --secondary: #27272a;
+        --secondary-foreground: #e4e4e7;
+        --muted: #27272a;
+        --muted-foreground: #a1a1aa;
+        --accent: #27272a;
+        --accent-foreground: #f8fafc;
+        --destructive: #dc2626;
+        --card: #171717;
+        --card-foreground: #f8fafc;
+        --popover: #171717;
+        --popover-foreground: #f8fafc;
+        --border: #27272a;
+        --input: #171717;
+        --ring: #d4af37;
+        --chart-1: #d4af37;
+        --chart-2: #a1a1aa;
+        --chart-3: #ef4444;
+        --chart-4: #3f3f46;
+        --chart-5: #f8fafc;
+
+        --font-sans: "Inter";
+        --font-heading: "Space Grotesk";
+        --font-serif: "Playfair Display";
+        --font-mono: "JetBrains Mono";
+
+        --radius: 0.5rem;
+      }
+
+      /* Prevent layout shift for icons without explicit dimensions */
+      iconify-icon:not([width]):not([height]) {
+        display: inline-block;
+        width: 1em;
+        height: 1em;
+      }
+
+      /* Hide scrollbars */
+      *,
+      *::before,
+      *::after {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      *::-webkit-scrollbar {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="min-h-screen bg-background text-foreground pb-24">
+      <header class="bg-card border-b border-border px-6 pt-10 pb-4 sticky top-0 z-20">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <iconify-icon icon="solar:buildings-bold" class="text-primary text-2xl"></iconify-icon
+            ><span class="font-heading font-bold uppercase tracking-widest text-lg">Апофеоз</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="text-right">
+              <p
+                class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-tight"
+              >
+                Бригадир
+              </p>
+              <p class="text-xs font-bold leading-tight uppercase">M. Zotov</p>
+            </div>
+            <img
+              src="https://lh3.googleusercontent.com/a/ACg8ocK5r5nPPVK8pEsIBAHLjTLUujMVgHsXxKpHNVeXqDWQyN4Okw=s96-c"
+              class="w-10 h-10 rounded-full border-2 border-primary/20"
+              alt="Avatar"
+            />
+          </div>
+        </div>
+        <div class="flex items-end justify-between">
+          <div>
+            <h2 class="font-heading text-2xl font-bold uppercase tracking-wider">Моя бригада</h2>
+            <p class="text-xs text-muted-foreground uppercase font-medium tracking-wide">
+              Вторник, 24 октября
+            </p>
+          </div>
+          <div class="bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-lg">
+            <p
+              class="text-[9px] font-bold text-primary uppercase tracking-widest leading-none mb-1"
+            >
+              На смене
+            </p>
+            <p class="text-xl font-heading font-bold text-primary leading-none">
+              12 <span class="text-[10px] text-primary/70 font-sans tracking-normal">/ 18</span>
+            </p>
+          </div>
+        </div>
+      </header>
+      <main class="p-6 space-y-6">
+        <div class="relative group">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <iconify-icon
+              icon="solar:magnifer-linear"
+              class="text-muted-foreground group-focus-within:text-primary transition-colors"
+            ></iconify-icon>
+          </div>
+          <input
+            type="text"
+            class="w-full bg-card border border-border text-foreground rounded-lg pl-11 pr-4 py-3 text-sm focus:border-primary focus:ring-0 outline-none transition-all placeholder:text-muted-foreground/40 font-medium"
+            placeholder="Поиск работника..."
+          />
+        </div>
+        <div class="space-y-3">
+          <div
+            class="bg-card border border-border rounded-lg flex items-center p-4 relative overflow-hidden group"
+          >
+            <div
+              class="absolute inset-y-0 left-0 w-1 bg-primary shadow-[2px_0_12px_rgba(212,175,55,0.4)]"
+            ></div>
+            <img
+              src="https://randomuser.me/api/portraits/men/32.jpg"
+              class="w-12 h-12 rounded-lg object-cover grayscale-[0.5]"
+              alt="Worker"
+            />
+            <div class="ml-4 flex-1">
+              <h3 class="text-sm font-bold uppercase tracking-wide">Алексей Смирнов</h3>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="flex h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
+                <p class="text-[10px] font-bold text-primary uppercase tracking-widest">
+                  На смене: 06ч 42м
+                </p>
+              </div>
+            </div>
+            <button
+              class="bg-transparent border-2 border-primary text-primary text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full hover:bg-primary/5 active:scale-95 transition-all"
+            >
+              Завершить
+            </button>
+          </div>
+          <div
+            class="bg-card border border-border rounded-lg flex items-center p-4 relative overflow-hidden group opacity-80"
+          >
+            <img
+              src="https://randomuser.me/api/portraits/men/44.jpg"
+              class="w-12 h-12 rounded-lg object-cover grayscale"
+              alt="Worker"
+            />
+            <div class="ml-4 flex-1">
+              <h3 class="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                Дмитрий Волков
+              </h3>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="flex h-1.5 w-1.5 rounded-full bg-muted-foreground"></span>
+                <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  Не на смене
+                </p>
+              </div>
+            </div>
+            <button
+              class="bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full hover:bg-primary/90 active:scale-95 transition-all"
+            >
+              Начать
+            </button>
+          </div>
+          <div
+            class="bg-card border border-border rounded-lg flex items-center p-4 relative overflow-hidden group"
+          >
+            <div
+              class="absolute inset-y-0 left-0 w-1 bg-primary shadow-[2px_0_12px_rgba(212,175,55,0.4)]"
+            ></div>
+            <img
+              src="https://randomuser.me/api/portraits/men/15.jpg"
+              class="w-12 h-12 rounded-lg object-cover grayscale-[0.5]"
+              alt="Worker"
+            />
+            <div class="ml-4 flex-1">
+              <h3 class="text-sm font-bold uppercase tracking-wide">Николай Попов</h3>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="flex h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
+                <p class="text-[10px] font-bold text-primary uppercase tracking-widest">
+                  На смене: 04ч 15м
+                </p>
+              </div>
+            </div>
+            <button
+              class="bg-transparent border-2 border-primary text-primary text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full hover:bg-primary/5 active:scale-95 transition-all"
+            >
+              Завершить
+            </button>
+          </div>
+          <div
+            class="bg-card border border-border rounded-lg flex items-center p-4 relative overflow-hidden group opacity-80"
+          >
+            <img
+              src="https://randomuser.me/api/portraits/men/67.jpg"
+              class="w-12 h-12 rounded-lg object-cover grayscale"
+              alt="Worker"
+            />
+            <div class="ml-4 flex-1">
+              <h3 class="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                Иван Кузнецов
+              </h3>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="flex h-1.5 w-1.5 rounded-full bg-muted-foreground"></span>
+                <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  Не на смене
+                </p>
+              </div>
+            </div>
+            <button
+              class="bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full hover:bg-primary/90 active:scale-95 transition-all"
+            >
+              Начать
+            </button>
+          </div>
+        </div>
+      </main>
+      <nav
+        class="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border flex justify-around items-center px-4 py-3 z-30"
+      >
+        <button class="flex flex-col items-center gap-1 flex-1 text-primary">
+          <iconify-icon icon="solar:users-group-rounded-bold" class="text-2xl"></iconify-icon
+          ><span class="text-[10px] font-bold uppercase tracking-widest">Команда</span></button
+        ><button class="flex flex-col items-center gap-1 flex-1 text-muted-foreground/60">
+          <iconify-icon icon="solar:history-linear" class="text-2xl"></iconify-icon
+          ><span class="text-[10px] font-bold uppercase tracking-widest">Журнал</span></button
+        ><button class="flex flex-col items-center gap-1 flex-1 text-muted-foreground/60">
+          <iconify-icon icon="solar:settings-linear" class="text-2xl"></iconify-icon
+          ><span class="text-[10px] font-bold uppercase tracking-widest">Профиль</span>
+        </button>
+      </nav>
+    </div>
+  </body>
+</html>
