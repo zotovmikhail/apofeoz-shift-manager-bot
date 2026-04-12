@@ -47,9 +47,10 @@ if (-not (Test-Path -LiteralPath $GradleWrapper)) {
 if (-not $SkipDocker) {
     Ensure-Command "docker"
 
-    try {
-        docker info *> $null
-    } catch {
+    # docker info может писать в stderr при успешном подключении;
+    # проверяем доступность daemon по коду выхода.
+    docker version --format "{{.Server.Version}}" 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) {
         Fail "Docker недоступен. Запусти Docker Desktop и повтори."
     }
 
