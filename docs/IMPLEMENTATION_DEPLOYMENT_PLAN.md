@@ -3,7 +3,7 @@
 Документ описывает **порядок работ**, **среды (test / prod)** на твоей **виртуальной машине с Docker**, и **как проектировать Android** под текущую архитектуру из `BACKEND_ARCHITECTURE.md` и `MOBILE_ARCHITECTURE.md`.
 
 > **Связанные документы:** `SYSTEM_ARCHITECTURE.md`, `BACKEND_ARCHITECTURE.md`, `MOBILE_ARCHITECTURE.md`, `MOBILE_UI_MOCKUP.md`.  
-> Устаревшие детали в `MOBILE_IMPLEMENTATION_PLAN.md` (старые пути API) не использовать как истину — ориентируйся на `/api/v1/...` и батчи только для сессий.
+> Устаревшие детали в `archive/MOBILE_IMPLEMENTATION_PLAN.md` (старые пути API) не использовать как истину — ориентируйся на `/api/v1/...` и батчи только для сессий.
 
 ---
 

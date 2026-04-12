@@ -38,6 +38,8 @@ REST API для мобильных клиентов с поддержкой оф
 
 ## 📖 Документация
 
+- **Агентам: старт здесь** — [docs/AGENTS.md](./docs/AGENTS.md)
+- **Каноничное текущее состояние проекта** — [docs/CODEX_PROJECT_STATE.md](./docs/CODEX_PROJECT_STATE.md)
 - **Веб-админка (ADMIN, план):** [docs/ADMIN_WEB.md](./docs/ADMIN_WEB.md)
 - **Общая архитектура системы:** [docs/SYSTEM_ARCHITECTURE.md](./docs/SYSTEM_ARCHITECTURE.md)
 - **Архитектура мобильного приложения и синхронизации:** [docs/MOBILE_ARCHITECTURE.md](./docs/MOBILE_ARCHITECTURE.md)
@@ -46,8 +48,7 @@ REST API для мобильных клиентов с поддержкой оф
 - **План реализации, деплоя и сред test/prod:** [docs/IMPLEMENTATION_DEPLOYMENT_PLAN.md](./docs/IMPLEMENTATION_DEPLOYMENT_PLAN.md)
 - **Чеклист готовности к test/prod и настройка URL в Android:** [docs/DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md)
 - **Для Java/Spring-разработчика:** Kotlin, Ktor и Android в этом репо — [docs/JAVA_SPRING_TO_KOTLIN_KTOR_ANDROID.md](./docs/JAVA_SPRING_TO_KOTLIN_KTOR_ANDROID.md)
-- **План реализации мобильного клиента (детали, частично устарел):** [docs/MOBILE_IMPLEMENTATION_PLAN.md](./docs/MOBILE_IMPLEMENTATION_PLAN.md)
-- **Примеры кода:** [docs/CODE_EXAMPLES.md](./docs/CODE_EXAMPLES.md)
+- **Архивные материалы (не источник истины):** [docs/archive/README.md](./docs/archive/README.md)
 - **Структура проекта:** [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)
 
 ## 🎨 UI source of truth
@@ -58,12 +59,14 @@ REST API для мобильных клиентов с поддержкой оф
 
 ## 👨‍💻 Для агентского режима (Cursor/AI)
 
-- **Где искать архитектуру и соглашения:**
+- **Стартовый документ:** `docs/AGENTS.md`
+- **Канон текущего состояния:** `docs/CODEX_PROJECT_STATE.md`
+- **Где искать архитектуру и соглашения дополнительно:**
   - общая картина — `docs/SYSTEM_ARCHITECTURE.md`;
   - мобильные клиенты и офлайн‑синхронизация — `docs/MOBILE_ARCHITECTURE.md`;
   - backend и модель БД — `docs/BACKEND_ARCHITECTURE.md`;
-  - структура репозитория — `PROJECT_STRUCTURE.md`;
-  - переход с Spring/Java — `docs/JAVA_SPRING_TO_KOTLIN_KTOR_ANDROID.md`.
+  - отчёты и табель — `docs/REPORTING.md`;
+  - структура репозитория — `PROJECT_STRUCTURE.md`.
 - **Основные точки входа в код:**
   - backend: `backend/src/main/kotlin/com/apofeoz/backend/…`;
   - android: `android/app/src/main/java/com/apofeoz/shiftmanager/…`.

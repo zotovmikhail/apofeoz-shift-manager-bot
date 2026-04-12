@@ -1,6 +1,9 @@
 # План реализации мобильного приложения
 
-> **Актуальный сквозной план** (Docker на VM, test/prod, Android + backend): см. **[IMPLEMENTATION_DEPLOYMENT_PLAN.md](./IMPLEMENTATION_DEPLOYMENT_PLAN.md)**.  
+> ARCHIVE ONLY: исторический план, не источник истины для текущей реализации.
+> Используйте вместо него: `docs/CODEX_PROJECT_STATE.md` и `docs/IMPLEMENTATION_DEPLOYMENT_PLAN.md`.
+
+> **Актуальный сквозной план** (Docker на VM, test/prod, Android + backend): см. **[IMPLEMENTATION_DEPLOYMENT_PLAN.md](../IMPLEMENTATION_DEPLOYMENT_PLAN.md)**.  
 > Ниже — детальный чеклист по мобильному клиенту; пути API вида `/api/auth/...` заменить на **`/api/v1/...`** согласно `BACKEND_ARCHITECTURE.md`.
 
 ## Резюме архитектуры

@@ -35,10 +35,14 @@ apofeoz-shift-manager/
 │   ├── SYSTEM_ARCHITECTURE.md
 │   ├── BACKEND_ARCHITECTURE.md
 │   ├── MOBILE_ARCHITECTURE.md
+│   ├── CODEX_PROJECT_STATE.md # каноничный current-state контракт для агентов
+│   ├── AGENTS.md              # старт для Codex/агентов (read order, правила)
+│   ├── DOC_MAINTENANCE_CHECKLIST.md
 │   ├── IMPLEMENTATION_DEPLOYMENT_PLAN.md
 │   ├── MOBILE_UI_MOCKUP.md
 │   ├── ui-mockups/         # HTML-мокапы экранов (дизайн-референс)
 │   ├── ui-reference/       # архивный UI-референс (Figma, токены, атрибуции)
+│   ├── archive/            # неавторитетные исторические документы
 │   └── ...
 │
 ├── .gitignore

@@ -1,5 +1,8 @@
 # Примеры кода (устаревшие черновики)
 
+> ARCHIVE ONLY: файл не является актуальным контрактом реализации.
+> Используйте вместо него: `docs/CODEX_PROJECT_STATE.md`, `docs/BACKEND_ARCHITECTURE.md`, `docs/MOBILE_ARCHITECTURE.md`.
+
 > Этот файл содержит **черновые/исторические** примеры и не является источником истины для текущей реализации.
 > Актуальный контракт синхронизации смен — в `docs/BACKEND_ARCHITECTURE.md` (батчи `START_SESSION`/`END_SESSION` через `POST /api/v1/sync/batch`, идентификатор смены — клиентский `sessionId`).
 
