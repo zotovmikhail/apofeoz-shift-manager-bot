@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -1097,13 +1098,10 @@ private fun ReportTab() {
 
 @Composable
 private fun FailedTab() {
-    val scope = rememberCoroutineScope()
     var items by remember { mutableStateOf<List<FailedBatchListItemDto>>(emptyList()) }
     var err by remember { mutableStateOf<String?>(null) }
     var selectedId by remember { mutableStateOf<String?>(null) }
     var reload by remember { mutableIntStateOf(0) }
-    var showClearAllDialog by remember { mutableStateOf(false) }
-    var clearAllBusy by remember { mutableStateOf(false) }
 
     LaunchedEffect(reload) {
         try {
@@ -1129,93 +1127,39 @@ private fun FailedTab() {
 
     Column(Modifier.padding(16.dp)) {
         err?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                "Нажмите запись для просмотра events[] и удаления одной записи.",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.weight(1f).padding(end = 8.dp),
-            )
-            OutlinedButton(
-                enabled = items.isNotEmpty() && !clearAllBusy,
-                onClick = { showClearAllDialog = true },
-            ) { Text("Очистить все") }
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items.forEach { row ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { selectedId = row.id },
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                ) {
-                    Column(Modifier.padding(12.dp)) {
-                        Text(row.batchUid, style = MaterialTheme.typography.titleSmall)
-                        Text(
-                            "Событие #${row.failedIndex}: ${row.reason}",
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                        Text(row.submittedAt, style = MaterialTheme.typography.labelSmall)
+        Text(
+            "Нажмите запись для просмотра events[] и удаления одной записи.",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+        )
+        if (items.isEmpty()) {
+            Text("Нет", style = MaterialTheme.typography.bodyMedium)
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 280.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(items, key = { it.id }) { row ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedId = row.id },
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    ) {
+                        Column(Modifier.padding(12.dp)) {
+                            Text(row.batchUid, style = MaterialTheme.typography.titleSmall)
+                            Text(
+                                "Событие #${row.failedIndex}: ${row.reason}",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            Text(row.submittedAt, style = MaterialTheme.typography.labelSmall)
+                        }
                     }
                 }
             }
         }
-    }
-
-    if (showClearAllDialog) {
-        AlertDialog(
-            onDismissRequest = { if (!clearAllBusy) showClearAllDialog = false },
-            title = { Text("Удалить все ошибки синхронизации на сервере?") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        "Будут безвозвратно удалены все записи из списка на сервере (таблица неуспешных батчей). Историю по ним восстановить нельзя.",
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Text(
-                        "Локальные ошибки 400/403 на устройстве не затрагиваются — они в отдельном блоке ниже.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = !clearAllBusy,
-                    onClick = {
-                        scope.launch {
-                            clearAllBusy = true
-                            err = null
-                            try {
-                                for (row in items.toList()) {
-                                    val r = AppContainer.api.deleteFailedBatch(row.id)
-                                    if (!r.isSuccessful) throw HttpException(r)
-                                }
-                                reload += 1
-                                showClearAllDialog = false
-                            } catch (e: HttpException) {
-                                err = "HTTP ${e.code()}: ${e.message()}"
-                                reload += 1
-                            } catch (e: Exception) {
-                                err = e.message ?: e.toString()
-                                reload += 1
-                            } finally {
-                                clearAllBusy = false
-                            }
-                        }
-                    },
-                ) { Text("Удалить всё с сервера") }
-            },
-            dismissButton = {
-                TextButton(
-                    enabled = !clearAllBusy,
-                    onClick = { showClearAllDialog = false },
-                ) { Text("Отмена") }
-            },
-        )
     }
 }
 
