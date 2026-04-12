@@ -14,6 +14,7 @@
 - **[mobile_mockup.html](./mobile_mockup.html)** — Интерактивный прототип мобильного приложения
 - **[mobile_presentation.html](./mobile_presentation.html)** — Презентация с мокапами экранов
 - **[MOBILE_UI_MOCKUP.md](./MOBILE_UI_MOCKUP.md)** — Описание всех экранов и компонентов
+- **[../Мобильное приложение для АПОФЕОЗ/README.md](../Мобильное приложение для АПОФЕОЗ/README.md)** — архивный дизайн-референс (не исполняемый проект)
 
 ### Планирование
 - **[IMPLEMENTATION_DEPLOYMENT_PLAN.md](./IMPLEMENTATION_DEPLOYMENT_PLAN.md)** — План реализации, разработки, деплоя; среды test/prod на VM (Docker); Android

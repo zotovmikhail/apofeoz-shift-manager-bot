@@ -39,6 +39,10 @@ apofeoz-shift-manager/
 │   ├── MOBILE_UI_MOCKUP.md
 │   └── ...
 │
+├── apofeoz_ui/             # HTML-мокапы экранов (дизайн-референс)
+│
+├── Мобильное приложение для АПОФЕОЗ/  # reference-only: ссылка на Figma + токены, без runtime-кода
+│
 ├── .gitignore
 ├── README.md
 └── PROJECT_STRUCTURE.md

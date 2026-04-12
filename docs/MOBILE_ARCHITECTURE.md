@@ -31,6 +31,7 @@
 - **Coroutines** и **Flow**: для асинхронных операций и реактивных данных
 - **WorkManager**: для фоновой синхронизации на Android
 - **Тема интерфейса**: `presentation/theme/ApofeozTheme` — тёмный фон и золотой акцент (`#d4af37`) в духе HTML-мокапов `apofeoz_ui/`; шрифты **Inter** и **Space Grotesk** (variable TTF в `android/app/src/main/res/font/`, см. `android/FONT_NOTICE.md`)
+- Папка `Мобильное приложение для АПОФЕОЗ/` используется только как архивный дизайн-референс (без исполняемого фронтенда).
 
 ### Логическая структура модулей
 
@@ -413,4 +414,3 @@ GET    /api/v1/reports/hours-by-worker-previous-day   # ADMIN: за вчера, 
 - **Пагинация** для списков
 - **Lazy loading** для больших данных
 - **Оптимистичные обновления** UI
-

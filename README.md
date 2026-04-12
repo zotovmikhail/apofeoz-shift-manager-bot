@@ -50,6 +50,12 @@ REST API для мобильных клиентов с поддержкой оф
 - **Примеры кода:** [docs/CODE_EXAMPLES.md](./docs/CODE_EXAMPLES.md)
 - **Структура проекта:** [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)
 
+## 🎨 UI source of truth
+
+- **Реальная мобильная реализация:** `android/.../presentation/*` + `android/.../presentation/theme/*`
+- **HTML-мокапы как референс экранов:** `apofeoz_ui/` и `docs/mobile_mockup.html`
+- **`Мобильное приложение для АПОФЕОЗ/`:** только архивный дизайн-референс (не runtime-проект)
+
 ## 👨‍💻 Для агентского режима (Cursor/AI)
 
 - **Где искать архитектуру и соглашения:**
