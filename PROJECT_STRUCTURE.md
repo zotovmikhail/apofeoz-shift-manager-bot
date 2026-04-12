@@ -37,11 +37,10 @@ apofeoz-shift-manager/
 │   ├── MOBILE_ARCHITECTURE.md
 │   ├── IMPLEMENTATION_DEPLOYMENT_PLAN.md
 │   ├── MOBILE_UI_MOCKUP.md
+│   ├── ui-reference/       # архивный UI-референс (Figma, токены, атрибуции)
 │   └── ...
 │
 ├── apofeoz_ui/             # HTML-мокапы экранов (дизайн-референс)
-│
-├── Мобильное приложение для АПОФЕОЗ/  # reference-only: ссылка на Figma + токены, без runtime-кода
 │
 ├── .gitignore
 ├── README.md
