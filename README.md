@@ -53,7 +53,7 @@ REST API для мобильных клиентов с поддержкой оф
 ## 🎨 UI source of truth
 
 - **Реальная мобильная реализация:** `android/.../presentation/*` + `android/.../presentation/theme/*`
-- **HTML-мокапы как референс экранов:** `apofeoz_ui/` и `docs/mobile_mockup.html`
+- **HTML-мокапы как референс экранов:** `docs/ui-mockups/` и `docs/mobile_mockup.html`
 - **Архивный дизайн-референс:** `docs/ui-reference/` (не runtime-проект)
 
 ## 👨‍💻 Для агентского режима (Cursor/AI)

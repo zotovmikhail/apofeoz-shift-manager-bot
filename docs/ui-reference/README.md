@@ -11,11 +11,10 @@
 ## Где находится актуальная UI-реализация
 
 - Android Compose theme: `android/app/src/main/java/com/apofeoz/shiftmanager/presentation/theme/`
-- HTML мокапы экранов: `apofeoz_ui/`
+- HTML мокапы экранов: `docs/ui-mockups/`
 - Документация с мокапами: `docs/mobile_mockup.html`, `docs/mobile_presentation.html`
 
 ## Правило для разработки
 
 - Не добавлять сюда runtime-код, JS-зависимости, Vite/Tailwind-конфиги.
 - Раздел используется только как архивный дизайн-референс.
-

@@ -3,7 +3,7 @@ package com.apofeoz.shiftmanager.presentation.theme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.ui.graphics.Color
 
-/** Палитра из HTML-мокапов `apofeoz_ui` (тёмная тема + золотой акцент). */
+/** Палитра из HTML-мокапов `docs/ui-mockups` (тёмная тема + золотой акцент). */
 object ApofeozColors {
     val Background = Color(0xFF0D0D0D)
     val Surface = Color(0xFF171717)

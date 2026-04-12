@@ -30,7 +30,7 @@
 - **DI**: Koin / Hilt (Android)
 - **Coroutines** и **Flow**: для асинхронных операций и реактивных данных
 - **WorkManager**: для фоновой синхронизации на Android
-- **Тема интерфейса**: `presentation/theme/ApofeozTheme` — тёмный фон и золотой акцент (`#d4af37`) в духе HTML-мокапов `apofeoz_ui/`; шрифты **Inter** и **Space Grotesk** (variable TTF в `android/app/src/main/res/font/`, см. `android/FONT_NOTICE.md`)
+- **Тема интерфейса**: `presentation/theme/ApofeozTheme` — тёмный фон и золотой акцент (`#d4af37`) в духе HTML-мокапов `docs/ui-mockups/`; шрифты **Inter** и **Space Grotesk** (variable TTF в `android/app/src/main/res/font/`, см. `android/FONT_NOTICE.md`)
 - Раздел `docs/ui-reference/` используется только как архивный дизайн-референс (без исполняемого фронтенда).
 
 ### Логическая структура модулей

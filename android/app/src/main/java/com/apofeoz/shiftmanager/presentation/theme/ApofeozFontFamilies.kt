@@ -8,7 +8,7 @@ import com.apofeoz.shiftmanager.R
 
 /**
  * Variable TTF из [Google Fonts](https://github.com/google/fonts) (OFL):
- * `res/font/inter_variable.ttf` — основной текст, `space_grotesk_variable.ttf` — заголовки (как в мокапах apofeoz_ui).
+ * `res/font/inter_variable.ttf` — основной текст, `space_grotesk_variable.ttf` — заголовки (как в мокапах docs/ui-mockups).
  */
 val ApofeozFontInter: FontFamily = FontFamily(
     Font(R.font.inter_variable, FontWeight.Normal, FontStyle.Normal),
