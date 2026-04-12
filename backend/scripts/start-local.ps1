@@ -3,53 +3,105 @@
 #   cd backend
 #   .\scripts\start-local.ps1
 #
-# Требования: Docker Desktop запущен, JDK 21 (или 17), порты 8080 и 15432 свободны (Postgres с хоста).
+# Опции:
+#   -SkipDocker      # не поднимать Postgres через docker compose
+#   -NoSeedAdmin     # не выставлять SEED_ADMIN_* по умолчанию
+#   -WaitSeconds 60  # сколько ждать healthcheck postgres
+#
+# Требования: Docker Desktop запущен (если не указан -SkipDocker),
+# gradlew.bat в backend/, JDK 21 (или 17).
 
+param(
+    [switch]$SkipDocker,
+    [switch]$NoSeedAdmin,
+    [ValidateRange(5, 300)]
+    [int]$WaitSeconds = 60
+)
+
+Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+function Fail([string]$Message, [int]$Code = 1) {
+    Write-Host "ОШИБКА: $Message" -ForegroundColor Red
+    exit $Code
+}
+
+function Ensure-Command([string]$Name) {
+    if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
+        Fail "Не найдена команда '$Name' в PATH."
+    }
+}
+
 $Root = Split-Path -Parent $PSScriptRoot
+$ComposeFile = Join-Path $Root "docker-compose.yml"
+$GradleWrapper = Join-Path $Root "gradlew.bat"
 Set-Location $Root
 
-Write-Host "==> Docker: поднимаю PostgreSQL (docker compose)..."
-try {
-    docker compose up -d
+if (-not (Test-Path -LiteralPath $ComposeFile)) {
+    Fail "Не найден docker-compose.yml в $Root"
 }
-catch {
-    Write-Host "ОШИБКА: Docker недоступен. Запусти Docker Desktop и повтори." -ForegroundColor Red
-    exit 1
+if (-not (Test-Path -LiteralPath $GradleWrapper)) {
+    Fail "Не найден gradlew.bat в $Root"
 }
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "ОШИБКА: docker compose завершился с кодом $LASTEXITCODE" -ForegroundColor Red
-    exit $LASTEXITCODE
-}
+if (-not $SkipDocker) {
+    Ensure-Command "docker"
 
-Write-Host "==> Жду готовности Postgres (до 30 с)..."
-$deadline = (Get-Date).AddSeconds(30)
-$ready = $false
-while ((Get-Date) -lt $deadline) {
-    docker compose exec -T postgres pg_isready -U apofeoz -d apofeoz 2>$null | Out-Null
-    if ($LASTEXITCODE -eq 0) {
-        $ready = $true
-        break
+    try {
+        docker info *> $null
+    } catch {
+        Fail "Docker недоступен. Запусти Docker Desktop и повтори."
     }
-    Start-Sleep -Seconds 2
-}
 
-if (-not $ready) {
-    Write-Host "Предупреждение: pg_isready не подтвердился за 30 с, пробую запустить backend." -ForegroundColor Yellow
+    Write-Host "==> Docker: поднимаю PostgreSQL (docker compose up -d postgres)..."
+    docker compose up -d postgres
+    if ($LASTEXITCODE -ne 0) {
+        Fail "docker compose завершился с кодом $LASTEXITCODE" $LASTEXITCODE
+    }
+
+    Write-Host "==> Жду готовности Postgres (healthcheck, до $WaitSeconds с)..."
+    $containerId = (docker compose ps -q postgres).Trim()
+    if ([string]::IsNullOrWhiteSpace($containerId)) {
+        Write-Host "Предупреждение: не удалось получить container id postgres. Продолжаю запуск backend." -ForegroundColor Yellow
+    } else {
+        $deadline = (Get-Date).AddSeconds($WaitSeconds)
+        $ready = $false
+
+        while ((Get-Date) -lt $deadline) {
+            $health = (docker inspect --format "{{if .State.Health}}{{.State.Health.Status}}{{else}}unknown{{end}}" $containerId 2>$null).Trim()
+            if ($health -eq "healthy") {
+                $ready = $true
+                break
+            }
+            if ($health -eq "unhealthy") {
+                Write-Host "Предупреждение: postgres health=unhealthy, продолжаю ожидание..." -ForegroundColor Yellow
+            }
+            Start-Sleep -Seconds 2
+        }
+
+        if (-not $ready) {
+            Write-Host "Предупреждение: Postgres не стал healthy за $WaitSeconds с, пробую запустить backend." -ForegroundColor Yellow
+        }
+    }
 }
 
 if (-not $env:JDBC_URL) {
     $env:JDBC_URL = "jdbc:postgresql://localhost:15432/apofeoz"
 }
 
-if (-not $env:SEED_ADMIN_EMAIL) {
-    $env:SEED_ADMIN_EMAIL = "admin@local.test"
-}
-if (-not $env:SEED_ADMIN_PASSWORD) {
-    $env:SEED_ADMIN_PASSWORD = "AdminPass123!"
+if (-not $NoSeedAdmin) {
+    if (-not $env:SEED_ADMIN_EMAIL) {
+        $env:SEED_ADMIN_EMAIL = "admin@local.test"
+    }
+    if (-not $env:SEED_ADMIN_PASSWORD) {
+        $env:SEED_ADMIN_PASSWORD = "AdminPass123!"
+    }
+    Write-Host "==> SEED_ADMIN_EMAIL=$($env:SEED_ADMIN_EMAIL)"
 }
 
-Write-Host "==> SEED_ADMIN_EMAIL=$($env:SEED_ADMIN_EMAIL)"
+Write-Host "==> JDBC_URL=$($env:JDBC_URL)"
 Write-Host "==> Запуск Ktor (Ctrl+C остановит сервер)..."
-& "$Root\gradlew.bat" run --no-daemon
+& $GradleWrapper run --no-daemon
+if ($LASTEXITCODE -ne 0) {
+    Fail "gradlew run завершился с кодом $LASTEXITCODE" $LASTEXITCODE
+}
