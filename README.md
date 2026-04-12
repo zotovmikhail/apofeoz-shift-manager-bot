@@ -8,6 +8,7 @@
 apofeoz-shift-manager/
 ├── android/      # Android приложение (Kotlin + Jetpack Compose)
 ├── backend/      # Backend API (Kotlin + Ktor)
+├── infra/        # Terraform и prod-deploy скрипты (Timeweb Cloud)
 └── docs/         # Документация и мокапы
 ```
 
@@ -36,6 +37,12 @@ REST API для мобильных клиентов с поддержкой оф
 **Документация:** [backend/README.md](./backend/README.md)  
 **Архитектура backend и модель данных:** [docs/BACKEND_ARCHITECTURE.md](./docs/BACKEND_ARCHITECTURE.md)
 
+### 3. Infrastructure (`infra/`)
+Инфраструктура и деплой backend в Timeweb Cloud (Terraform + runtime scripts).
+
+- **IaC:** [infra/terraform/README.md](./infra/terraform/README.md)
+- **Prod deploy scripts:** [infra/deploy/README.md](./infra/deploy/README.md)
+
 ## 📖 Документация
 
 - **Агентам: старт здесь** — [docs/AGENTS.md](./docs/AGENTS.md)
@@ -46,6 +53,7 @@ REST API для мобильных клиентов с поддержкой оф
 - **Архитектура backend:** [docs/BACKEND_ARCHITECTURE.md](./docs/BACKEND_ARCHITECTURE.md)
 - **Мокапы UI:** [docs/mobile_mockup.html](./docs/mobile_mockup.html)
 - **План реализации, деплоя и сред test/prod:** [docs/IMPLEMENTATION_DEPLOYMENT_PLAN.md](./docs/IMPLEMENTATION_DEPLOYMENT_PLAN.md)
+- **Terraform Timeweb (prod):** [infra/terraform/README.md](./infra/terraform/README.md)
 - **Чеклист готовности к test/prod и настройка URL в Android:** [docs/DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md)
 - **Для Java/Spring-разработчика:** Kotlin, Ktor и Android в этом репо — [docs/JAVA_SPRING_TO_KOTLIN_KTOR_ANDROID.md](./docs/JAVA_SPRING_TO_KOTLIN_KTOR_ANDROID.md)
 - **Архивные материалы (не источник истины):** [docs/archive/README.md](./docs/archive/README.md)

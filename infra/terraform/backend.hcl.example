@@ -1,0 +1,6 @@
+organization = "your-terraform-cloud-org"
+
+workspaces {
+  name = "apofeoz-prod"
+}
+

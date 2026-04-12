@@ -22,10 +22,10 @@
 - Изменение офлайн-синхронизации Android: `CODEX_PROJECT_STATE.md`, `MOBILE_ARCHITECTURE.md`, затем `android/.../work` и `android/.../data/local`.
 - Изменение отчётов/табеля: `REPORTING.md`, `CODEX_PROJECT_STATE.md`, затем `ReportService`/`TimesheetXlsxWriter`.
 - Изменение UI-темы: `docs/ui-reference/THEME_TOKENS.md`, `docs/ui-mockups/`, затем `android/.../presentation/theme`.
+- Изменение инфраструктуры/деплоя: `infra/terraform/README.md`, затем `infra/terraform/*.tf` и `infra/deploy/*`.
 
 ## Do-Not-Assume
 
 - Не предполагать отдельные REST CRUD для смен: смены идут через `POST /api/v1/sync/batch`.
 - Не предполагать офлайн-очередь для workers: workers только онлайн API.
 - Не считать документы из `docs/archive/` актуальным контрактом.
-

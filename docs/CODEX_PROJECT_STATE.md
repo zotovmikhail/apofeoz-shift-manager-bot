@@ -13,6 +13,7 @@
 ## Current Product State
 
 - Реализованы: Android клиент (`android/`) и backend API на Ktor (`backend/`).
+- Добавлена инфраструктурная заготовка для prod на Timeweb Cloud: `infra/terraform/` + `infra/deploy/`.
 - Веб-админка: в планах, кодовой реализации нет (`docs/ADMIN_WEB.md`).
 - Основной бизнес-поток: старт/стоп смен в мобильном клиенте с офлайн-очередью и фоновой синхронизацией.
 
@@ -52,4 +53,4 @@
 
 - Нет production web-admin frontend.
 - Нет отдельного CI-гейта для обязательной валидации документации.
-
+- Нет автоматического CI/CD деплоя infra+backend (доставка пока manual script на сервере).

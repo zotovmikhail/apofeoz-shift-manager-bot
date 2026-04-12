@@ -30,6 +30,15 @@ apofeoz-shift-manager/
 │   ├── env.example
 │   └── README.md
 │
+├── infra/                  # Инфраструктура и прод-деплой
+│   ├── terraform/          # Timeweb Terraform (VPS + Firewall + DNS + cloud-init)
+│   │   ├── modules/vps/
+│   │   ├── templates/
+│   │   ├── terraform.tfvars.example
+│   │   └── README.md
+│   ├── deploy/             # docker-compose.prod, nginx, deploy/backup scripts
+│   └── README.md
+│
 ├── docs/                   # Документация
 │   ├── ADMIN_WEB.md        # план: веб-админка ADMIN (интернет, responsive)
 │   ├── SYSTEM_ARCHITECTURE.md

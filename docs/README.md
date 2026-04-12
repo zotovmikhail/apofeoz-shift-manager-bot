@@ -28,6 +28,8 @@
 
 - **[IMPLEMENTATION_DEPLOYMENT_PLAN.md](./IMPLEMENTATION_DEPLOYMENT_PLAN.md)** — план реализации и деплоя (не заменяет canonical docs).
 - **[DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)** — сверка готовности test/prod.
+- **[infra/terraform/README.md](../infra/terraform/README.md)** — Terraform для Timeweb Cloud (prod MVP).
+- **[infra/deploy/README.md](../infra/deploy/README.md)** — runtime-скрипты деплоя/backup/restore.
 - **[JAVA_SPRING_TO_KOTLIN_KTOR_ANDROID.md](./JAVA_SPRING_TO_KOTLIN_KTOR_ANDROID.md)** — мост для Java/Spring разработчика.
 
 ## Archive (Non-Authoritative)

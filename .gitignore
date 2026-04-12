@@ -56,6 +56,13 @@ reports/
 .env
 .env.local
 .env.production
+infra/terraform/backend.hcl
+infra/terraform/terraform.tfvars
+infra/terraform/*.auto.tfvars
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
+infra/deploy/.env.prod
 
 # IDE
 .vscode/
