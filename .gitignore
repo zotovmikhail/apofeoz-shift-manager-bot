@@ -70,9 +70,6 @@ reports/
 ehthumbs.db
 Thumbs.db
 
-# Docker
-.dockerignore
-
 # Temporary files
 *.tmp
 *.temp
@@ -100,8 +97,6 @@ android/.externalNativeBuild
 android/.cxx
 android/*.iml
 android/*.hprof
-android/.idea/
-android/local.properties
 android/.idea/workspace.xml
 android/.idea/tasks.xml
 android/.idea/gradle.xml
