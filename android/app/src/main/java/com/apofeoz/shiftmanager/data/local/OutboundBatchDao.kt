@@ -35,4 +35,12 @@ interface OutboundBatchDao {
 
     @Query("SELECT COUNT(*) FROM outbound_batches WHERE state = :pending")
     suspend fun countPending(pending: String = OutboundBatchEntity.STATE_PENDING): Int
+
+    @Query(
+        "SELECT bodyJson FROM outbound_batches WHERE state = :pending OR state = :inFlight ORDER BY id ASC",
+    )
+    suspend fun listOpenBatchBodies(
+        pending: String = OutboundBatchEntity.STATE_PENDING,
+        inFlight: String = OutboundBatchEntity.STATE_IN_FLIGHT,
+    ): List<String>
 }

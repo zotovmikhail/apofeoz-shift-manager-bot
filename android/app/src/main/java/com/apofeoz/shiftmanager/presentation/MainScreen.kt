@@ -569,7 +569,22 @@ private fun WorkersTab(user: UserResponseDto) {
                         .associate { it.workerId to it.id }
                     serverActiveByWorkerId = fresh
                     cache.set(CachedActiveSessions(byWorkerId = fresh, fetchedAt = OffsetDateTime.now(ZoneOffset.UTC).toString()))
-                    activeSessions = mergedWithServer(sessions.getActiveSessions())
+                    val localBefore = sessions.getActiveSessions()
+                    val localReconciled = localBefore.filter { local ->
+                        val serverSessionId = fresh[local.workerId]
+                        when {
+                            // Server confirms exactly this active session.
+                            serverSessionId == local.sessionId -> true
+                            // Server has different session for same worker -> local is stale.
+                            !serverSessionId.isNullOrBlank() -> false
+                            // No server active session: keep only if START is still pending in queue.
+                            else -> queue.hasPendingStartFor(local.workerId, local.sessionId)
+                        }
+                    }
+                    if (localReconciled.size != localBefore.size) {
+                        sessions.setActiveSessions(localReconciled)
+                    }
+                    activeSessions = mergedWithServer(localReconciled)
                 }
                 error = null
             } catch (e: Exception) {
