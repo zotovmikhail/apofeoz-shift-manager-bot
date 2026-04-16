@@ -30,6 +30,7 @@
 - **[DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)** — сверка готовности test/prod.
 - **[infra/terraform/README.md](../infra/terraform/README.md)** — Terraform для Timeweb Cloud (prod MVP).
 - **[infra/deploy/README.md](../infra/deploy/README.md)** — runtime-скрипты деплоя/backup/restore.
+- **[web/README.md](../web/README.md)** — веб-админка (Next.js).
 - **[JAVA_SPRING_TO_KOTLIN_KTOR_ANDROID.md](./JAVA_SPRING_TO_KOTLIN_KTOR_ANDROID.md)** — мост для Java/Spring разработчика.
 
 ## Archive (Non-Authoritative)

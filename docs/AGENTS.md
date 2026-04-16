@@ -23,6 +23,7 @@
 - Изменение отчётов/табеля: `REPORTING.md`, `CODEX_PROJECT_STATE.md`, затем `ReportService`/`TimesheetXlsxWriter`.
 - Изменение UI-темы: `docs/ui-reference/THEME_TOKENS.md`, `docs/ui-mockups/`, затем `android/.../presentation/theme`.
 - Изменение инфраструктуры/деплоя: `infra/terraform/README.md`, затем `infra/terraform/*.tf` и `infra/deploy/*`.
+- Изменение web-админки: `web/README.md`, затем `web/app`, `web/components`, `web/lib`.
 
 ## Do-Not-Assume
 

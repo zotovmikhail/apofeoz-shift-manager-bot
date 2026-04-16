@@ -3,7 +3,7 @@
 Этот каталог поднимает прод-инфраструктуру для backend на Timeweb Cloud:
 - VPS (Ubuntu 22.04, SSH key only)
 - Firewall (22/80/443)
-- DNS `A` record для `api.<domain>` (опционально)
+- DNS `A` records для `api.<domain>` и `admin.<domain>` (опционально)
 - Базовый cloud-init (Docker, Nginx, Certbot, каталоги `/opt/apofeoz`)
 
 ## 1) Подготовка
@@ -35,10 +35,11 @@ terraform apply
 3. Синхронизируйте runtime-файлы:
    - `/opt/apofeoz/app/infra/deploy/sync-runtime-files.sh /opt/apofeoz/app`
 4. Создайте `/opt/apofeoz/config/.env.prod` из `infra/deploy/env.example.prod`.
+   - обязательно заполните `NEXT_PUBLIC_API_BASE_URL` и `CORS_ALLOWED_ORIGINS`.
 5. Запустите backend:
    - `/opt/apofeoz/scripts/deploy-prod.sh`
 6. Включите TLS:
-   - `/opt/apofeoz/scripts/setup-tls.sh api.<domain> <email>`
+   - `/opt/apofeoz/scripts/setup-tls.sh api.<domain> admin.<domain> <email>`
 7. Включите ежедневные бэкапы:
    - `/opt/apofeoz/scripts/install-backup-timer.sh`
 

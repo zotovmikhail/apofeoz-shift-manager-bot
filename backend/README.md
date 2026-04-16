@@ -44,6 +44,7 @@ docker compose up -d
 | `JWT_SECRET` | HMAC секрет access-токена (**≥ 32 символов** в проде) |
 | `JWT_ISSUER` / `JWT_AUDIENCE` | Проверка JWT |
 | `REPORT_TIME_ZONE` | Зона календарных дней во всех отчётах и табеле; по умолчанию **`Europe/Moscow`** |
+| `CORS_ALLOWED_ORIGINS` | Список origin через запятую для CORS (например `https://admin.example.com`); если пусто — `anyHost` |
 | `ACCESS_TOKEN_MINUTES` | Срок жизни access JWT (по умолчанию из HOCON, обычно 15) |
 | `REFRESH_TOKEN_DAYS` | Срок жизни refresh (по умолчанию из HOCON, обычно 30) |
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | Однократное создание администратора при старте |

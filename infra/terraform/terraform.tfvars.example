@@ -1,6 +1,7 @@
 project_name      = "apofeoz"
 domain            = "example.com"
 api_subdomain     = "api"
+admin_subdomain   = "admin"
 manage_dns        = true
 region            = "ru-1"
 availability_zone = ""
@@ -14,4 +15,3 @@ ssh_allowed_cidr  = "203.0.113.10/32"
 server_timezone   = "Europe/Moscow"
 letsencrypt_email = "infra@example.com"
 app_user          = "deploy"
-

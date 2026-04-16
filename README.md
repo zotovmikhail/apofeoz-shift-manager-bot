@@ -8,6 +8,7 @@
 apofeoz-shift-manager/
 ├── android/      # Android приложение (Kotlin + Jetpack Compose)
 ├── backend/      # Backend API (Kotlin + Ktor)
+├── web/          # Web админка (Next.js + TypeScript)
 ├── infra/        # Terraform и prod-deploy скрипты (Timeweb Cloud)
 └── docs/         # Документация и мокапы
 ```
@@ -42,6 +43,11 @@ REST API для мобильных клиентов с поддержкой оф
 
 - **IaC:** [infra/terraform/README.md](./infra/terraform/README.md)
 - **Prod deploy scripts:** [infra/deploy/README.md](./infra/deploy/README.md)
+
+### 4. Admin Web (`web/`)
+Веб-админка для роли `ADMIN` с вкладками пользователей, работников и отчётов.
+
+- **Документация:** [web/README.md](./web/README.md)
 
 ## 📖 Документация
 
@@ -93,6 +99,13 @@ cd android
 cd backend
 docker compose up -d   # или свой Postgres
 .\gradlew.bat run      # Windows; см. backend/README.md
+```
+
+### Admin Web
+```bash
+cd web
+npm install
+npm run dev
 ```
 
 ## 📝 Лицензия

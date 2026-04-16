@@ -36,12 +36,24 @@ docker compose -p "$STACK_NAME" -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d 
 echo "==> waiting for health endpoint"
 for i in {1..30}; do
   if curl -fsS "http://127.0.0.1:8080/health" >/dev/null 2>&1; then
-    echo "OK: backend is healthy"
+    break
+  fi
+  sleep 2
+done
+
+if ! curl -fsS "http://127.0.0.1:8080/health" >/dev/null 2>&1; then
+  echo "ERROR: backend is not healthy on http://127.0.0.1:8080/health"
+  exit 1
+fi
+
+echo "==> waiting for web endpoint"
+for i in {1..30}; do
+  if curl -fsS "http://127.0.0.1:3000" >/dev/null 2>&1; then
+    echo "OK: backend and web are healthy"
     exit 0
   fi
   sleep 2
 done
 
-echo "ERROR: backend is not healthy on http://127.0.0.1:8080/health"
+echo "ERROR: web is not healthy on http://127.0.0.1:3000"
 exit 1
-

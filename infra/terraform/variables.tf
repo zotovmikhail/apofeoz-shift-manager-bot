@@ -22,6 +22,12 @@ variable "api_subdomain" {
   default     = "api"
 }
 
+variable "admin_subdomain" {
+  type        = string
+  description = "Admin web subdomain label. Use '@' for zone root."
+  default     = "admin"
+}
+
 variable "manage_dns" {
   type        = bool
   description = "Create/update A record in Timeweb DNS zone."
@@ -85,4 +91,3 @@ variable "app_user" {
   description = "OS user owning deploy/runtime directories."
   default     = "deploy"
 }
-

@@ -29,6 +29,17 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
 
+  web:
+    build:
+      context: /opt/apofeoz/app/web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:3000:3000"
+
 volumes:
   apofeoz_pg_data:
-

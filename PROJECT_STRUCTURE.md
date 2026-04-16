@@ -30,6 +30,13 @@ apofeoz-shift-manager/
 │   ├── env.example
 │   └── README.md
 │
+├── web/                    # Admin web (Next.js, TypeScript)
+│   ├── app/
+│   ├── components/
+│   ├── lib/
+│   ├── Dockerfile
+│   └── README.md
+│
 ├── infra/                  # Инфраструктура и прод-деплой
 │   ├── terraform/          # Timeweb Terraform (VPS + Firewall + DNS + cloud-init)
 │   │   ├── modules/vps/

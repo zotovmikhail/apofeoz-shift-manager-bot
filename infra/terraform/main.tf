@@ -1,5 +1,6 @@
 locals {
-  api_fqdn = var.api_subdomain == "@" ? var.domain : "${var.api_subdomain}.${var.domain}"
+  api_fqdn   = var.api_subdomain == "@" ? var.domain : "${var.api_subdomain}.${var.domain}"
+  admin_fqdn = var.admin_subdomain == "@" ? var.domain : "${var.admin_subdomain}.${var.domain}"
 }
 
 module "vps" {
@@ -29,6 +30,15 @@ resource "twc_dns_rr" "api_a_record" {
 
   zone_id = data.twc_dns_zone.zone[0].id
   name    = var.api_subdomain
+  type    = "A"
+  value   = module.vps.public_ipv4
+}
+
+resource "twc_dns_rr" "admin_a_record" {
+  count = var.manage_dns ? 1 : 0
+
+  zone_id = data.twc_dns_zone.zone[0].id
+  name    = var.admin_subdomain
   type    = "A"
   value   = module.vps.public_ipv4
 }
