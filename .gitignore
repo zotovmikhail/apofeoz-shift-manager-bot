@@ -79,6 +79,7 @@ infra/deploy/.env.prod
 .Trashes
 ehthumbs.db
 Thumbs.db
+Microsoft/Windows/PowerShell/ModuleAnalysisCache
 
 # Temporary files
 *.tmp
