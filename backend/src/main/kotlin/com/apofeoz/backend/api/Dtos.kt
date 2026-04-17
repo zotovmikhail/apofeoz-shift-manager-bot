@@ -127,6 +127,39 @@ data class HoursReportResponse(
 )
 
 @Serializable
+data class TimesheetWorkerResponse(
+    val workerId: String,
+    val firstName: String,
+    val lastName: String,
+    val foremanId: String,
+    val foremanDisplayName: String?,
+)
+
+@Serializable
+data class TimesheetDayCellResponse(
+    val workerId: String,
+    val hours: Double,
+    val shiftEquivalent: Double,
+)
+
+@Serializable
+data class TimesheetDayRowResponse(
+    val date: String,
+    val cells: List<TimesheetDayCellResponse>,
+)
+
+@Serializable
+data class TimesheetReportResponse(
+    val title: String,
+    val fromDate: String,
+    val toDate: String,
+    val timezone: String,
+    val shiftNormHours: Int = 8,
+    val workers: List<TimesheetWorkerResponse>,
+    val rows: List<TimesheetDayRowResponse>,
+)
+
+@Serializable
 data class FailedBatchListItem(
     val id: String,
     val batchUid: String,

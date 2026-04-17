@@ -5,6 +5,10 @@ import com.apofeoz.backend.api.ApiException
 import com.apofeoz.backend.api.HoursReportResponse
 import com.apofeoz.backend.api.ReportRowResponse
 import com.apofeoz.backend.api.ReportTotals
+import com.apofeoz.backend.api.TimesheetDayCellResponse
+import com.apofeoz.backend.api.TimesheetDayRowResponse
+import com.apofeoz.backend.api.TimesheetReportResponse
+import com.apofeoz.backend.api.TimesheetWorkerResponse
 import com.apofeoz.backend.data.SessionEntity
 import com.apofeoz.backend.data.SessionRepository
 import com.apofeoz.backend.data.UserRepository
@@ -82,34 +86,12 @@ class ReportService(
         if (role != Role.ADMIN) {
             throw ApiException(HttpStatusCode.Forbidden, "forbidden", "Admin only")
         }
-        val zone = try {
-            ZoneId.of(cfg.reportTimeZone)
-        } catch (_: Exception) {
-            throw ApiException(HttpStatusCode.InternalServerError, "config_error", "Invalid report timezone in config")
-        }
-        if (from.isNullOrBlank() || to.isNullOrBlank()) {
-            throw ApiException(HttpStatusCode.BadRequest, "validation_error", "from and to are required (YYYY-MM-DD)")
-        }
-        val fromDate = try {
-            LocalDate.parse(from)
-        } catch (_: Exception) {
-            throw ApiException(HttpStatusCode.BadRequest, "validation_error", "from must be YYYY-MM-DD")
-        }
-        val toDate = try {
-            LocalDate.parse(to)
-        } catch (_: Exception) {
-            throw ApiException(HttpStatusCode.BadRequest, "validation_error", "to must be YYYY-MM-DD")
-        }
-        if (toDate.isBefore(fromDate)) {
-            throw ApiException(HttpStatusCode.BadRequest, "validation_error", "to must be >= from")
-        }
-        val start = fromDate.atStartOfDay(zone).toOffsetDateTime()
-        val endExclusive = toDate.plusDays(1).atStartOfDay(zone).toOffsetDateTime()
+        val range = parseRange(from, to)
 
         val activeWorkers = workers.listActive()
         val shiftNorm = 8.0
         val rows = activeWorkers.map { w ->
-            val hours = sessions.sumClosedHoursForWorkerInRange(w.id, start, endExclusive)
+            val hours = sessions.sumClosedHoursForWorkerInRange(w.id, range.start, range.endExclusive)
             val shiftEq = (hours / shiftNorm).roundShiftEquivalentToThreeDecimals()
             val foremanUser = users.findById(w.foremanId)
             val foremanName = foremanUser?.let { "${it.firstName} ${it.lastName}" }
@@ -126,9 +108,9 @@ class ReportService(
         val totalHours = rows.sumOf { it.hours }
         val totalShifts = rows.sumOf { it.shiftEquivalent }.roundShiftEquivalentToThreeDecimals()
         return HoursReportResponse(
-            reportDate = "${fromDate}..${toDate}",
-            fromDate = fromDate.toString(),
-            toDate = toDate.toString(),
+            reportDate = "${range.fromDate}..${range.toDate}",
+            fromDate = range.fromDate.toString(),
+            toDate = range.toDate.toString(),
             timezone = cfg.reportTimeZone,
             shiftNormHours = 8,
             rows = rows,
@@ -136,10 +118,72 @@ class ReportService(
         )
     }
 
+    suspend fun timesheet(role: Role, from: String?, to: String?): TimesheetReportResponse {
+        if (role != Role.ADMIN) {
+            throw ApiException(HttpStatusCode.Forbidden, "forbidden", "Admin only")
+        }
+        val range = parseRange(from, to)
+        val activeWorkers = workers.listActive()
+        val closed = sessions.listClosedSessionsOverlapping(range.start, range.endExclusive)
+        val hoursByDay = aggregateHoursByWorkerAndDate(closed, range.zone, range.start, range.endExclusive)
+        val shiftNorm = 8.0
+        val workerColumns = activeWorkers.map { worker ->
+            val foremanUser = users.findById(worker.foremanId)
+            TimesheetWorkerResponse(
+                workerId = worker.id.toString(),
+                firstName = worker.firstName,
+                lastName = worker.lastName,
+                foremanId = worker.foremanId.toString(),
+                foremanDisplayName = foremanUser?.let { "${it.firstName} ${it.lastName}" },
+            )
+        }
+        val rows = generateSequence(range.fromDate) { current ->
+            current.plusDays(1).takeIf { !it.isAfter(range.toDate) }
+        }.map { date ->
+            TimesheetDayRowResponse(
+                date = date.toString(),
+                cells = workerColumns.map { worker ->
+                    val hours = hoursByDay[UUID.fromString(worker.workerId) to date] ?: 0.0
+                    TimesheetDayCellResponse(
+                        workerId = worker.workerId,
+                        hours = hours,
+                        shiftEquivalent = (hours / shiftNorm).roundShiftEquivalentToThreeDecimals(),
+                    )
+                },
+            )
+        }.toList()
+        return TimesheetReportResponse(
+            title = "Табель учёта рабочего времени",
+            fromDate = range.fromDate.toString(),
+            toDate = range.toDate.toString(),
+            timezone = cfg.reportTimeZone,
+            shiftNormHours = shiftNorm.toInt(),
+            workers = workerColumns,
+            rows = rows,
+        )
+    }
+
     suspend fun timesheetXlsx(role: Role, from: String?, to: String?): ByteArray {
         if (role != Role.ADMIN) {
             throw ApiException(HttpStatusCode.Forbidden, "forbidden", "Admin only")
         }
+        val range = parseRange(from, to)
+
+        val activeWorkers = workers.listActive()
+        val closed = sessions.listClosedSessionsOverlapping(range.start, range.endExclusive)
+        val hoursByDay = aggregateHoursByWorkerAndDate(closed, range.zone, range.start, range.endExclusive)
+        val shiftNorm = 8.0
+        return TimesheetXlsxWriter.write(
+            workers = activeWorkers,
+            fromDate = range.fromDate,
+            toDate = range.toDate,
+            reportTimeZone = cfg.reportTimeZone,
+            shiftNormHours = shiftNorm,
+            hoursByWorkerAndDate = hoursByDay,
+        )
+    }
+
+    private fun parseRange(from: String?, to: String?): ReportRange {
         val zone = try {
             ZoneId.of(cfg.reportTimeZone)
         } catch (_: Exception) {
@@ -161,20 +205,12 @@ class ReportService(
         if (toDate.isBefore(fromDate)) {
             throw ApiException(HttpStatusCode.BadRequest, "validation_error", "to must be >= from")
         }
-        val start = fromDate.atStartOfDay(zone).toOffsetDateTime()
-        val endExclusive = toDate.plusDays(1).atStartOfDay(zone).toOffsetDateTime()
-
-        val activeWorkers = workers.listActive()
-        val closed = sessions.listClosedSessionsOverlapping(start, endExclusive)
-        val hoursByDay = aggregateHoursByWorkerAndDate(closed, zone, start, endExclusive)
-        val shiftNorm = 8.0
-        return TimesheetXlsxWriter.write(
-            workers = activeWorkers,
+        return ReportRange(
+            zone = zone,
             fromDate = fromDate,
             toDate = toDate,
-            reportTimeZone = cfg.reportTimeZone,
-            shiftNormHours = shiftNorm,
-            hoursByWorkerAndDate = hoursByDay,
+            start = fromDate.atStartOfDay(zone).toOffsetDateTime(),
+            endExclusive = toDate.plusDays(1).atStartOfDay(zone).toOffsetDateTime(),
         )
     }
 
@@ -218,4 +254,12 @@ class ReportService(
             cursor = segmentEnd
         }
     }
+
+    private data class ReportRange(
+        val zone: ZoneId,
+        val fromDate: LocalDate,
+        val toDate: LocalDate,
+        val start: OffsetDateTime,
+        val endExclusive: OffsetDateTime,
+    )
 }

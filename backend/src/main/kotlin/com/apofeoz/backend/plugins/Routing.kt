@@ -131,6 +131,13 @@ fun Application.configureRouting(
                     call.respond(reportService.hoursByWorkerRange(Role.valueOf(p.role), from, to))
                 }
 
+                get("/reports/timesheet") {
+                    val p = call.jwtPrincipal()
+                    val from = call.request.queryParameters["from"]
+                    val to = call.request.queryParameters["to"]
+                    call.respond(reportService.timesheet(Role.valueOf(p.role), from, to))
+                }
+
                 get("/reports/timesheet.xlsx") {
                     val p = call.jwtPrincipal()
                     p.requireRoles(Role.ADMIN)

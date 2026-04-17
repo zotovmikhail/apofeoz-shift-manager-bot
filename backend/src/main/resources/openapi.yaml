@@ -288,6 +288,29 @@ paths:
           description: Invalid range
         '403':
           description: Not admin
+  /api/v1/reports/timesheet:
+    get:
+      summary: Timesheet matrix as JSON for web editing/preview (ADMIN)
+      description: |
+        Returns the same day-by-day worker matrix used for XLSX generation, but as structured JSON.
+        Each row is a calendar day in server report TZ; each cell contains raw hours and shiftEquivalent.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Timesheet matrix JSON
+        '400':
+          description: Invalid range
+        '403':
+          description: Not admin
 components:
   securitySchemes:
     bearerAuth:

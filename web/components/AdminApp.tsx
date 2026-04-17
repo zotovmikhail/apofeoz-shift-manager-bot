@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
-import * as XLSX from "xlsx";
 import {
   authHeader,
   bootstrapSession,
@@ -11,11 +10,12 @@ import {
   patchUser,
   patchWorker,
   reportRange,
+  timesheet,
   timesheetDownloadUrl,
   users,
   workers,
 } from "../lib/api";
-import type { HoursReportResponseDto, UserResponseDto, WorkerResponseDto } from "../lib/types";
+import type { HoursReportResponseDto, TimesheetReportResponseDto, UserResponseDto, WorkerResponseDto } from "../lib/types";
 
 type TabKey = "workers" | "users" | "reports" | "profile";
 
@@ -23,16 +23,6 @@ type SummaryMetric = {
   label: string;
   value: string;
   tone?: "accent" | "neutral";
-};
-
-type TimesheetCell = {
-  value: string;
-  tone?: "filled" | "muted";
-};
-
-type TimesheetTable = {
-  title: string;
-  rows: TimesheetCell[][];
 };
 
 const TAB_ORDER: TabKey[] = ["workers", "users", "reports", "profile"];
@@ -587,7 +577,7 @@ function ReportsTab({ onError }: { onError: (msg: string | null) => void }) {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [data, setData] = useState<HoursReportResponseDto | null>(null);
-  const [timesheet, setTimesheet] = useState<TimesheetTable | null>(null);
+  const [timesheetData, setTimesheetData] = useState<TimesheetReportResponseDto | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -611,10 +601,10 @@ function ReportsTab({ onError }: { onError: (msg: string | null) => void }) {
     try {
       const [jsonReport, xlsxTable] = await Promise.all([
         reportRange(from, to),
-        loadTimesheetPreview(from, to),
+        timesheet(from, to),
       ]);
       setData(jsonReport);
-      setTimesheet(xlsxTable);
+      setTimesheetData(xlsxTable);
     } catch (e) {
       onError(e instanceof Error ? e.message : "Не удалось построить отчет");
     } finally {
@@ -687,35 +677,63 @@ function ReportsTab({ onError }: { onError: (msg: string | null) => void }) {
           </div>
         )}
 
-        {timesheet && (
+        {timesheetData && (
           <div className="timesheetWrap">
             <div className="timesheetCaption">
               <p className="eyebrow">Предпросмотр табеля</p>
-              <h4>{timesheet.title}</h4>
+              <h4>{timesheetData.title}</h4>
               <p className="mutedText">
-                Колонки A–B сохранены пустыми, C — даты, дальше по две колонки на каждого работника: доля смены и резерв.
+                Табель строится отдельным JSON endpoint без парсинга файла. Структура сохранена под будущие правки смен и ручное редактирование.
               </p>
             </div>
             <div className="tableShell reportTableShell timesheetShell">
               <table className="timesheetTable">
                 <tbody>
-                  {timesheet.rows.map((row, rowIndex) => (
-                    <tr key={rowIndex}>
-                      {row.map((cell, cellIndex) => (
-                        <td
-                          key={`${rowIndex}-${cellIndex}`}
-                          className={[
-                            rowIndex === 0 ? "timesheetTitleRow" : "",
-                            rowIndex === 2 || rowIndex === 3 ? "timesheetHeaderRow" : "",
-                            cell.tone === "filled" ? "timesheetFilledCell" : "",
-                            cell.tone === "muted" ? "timesheetMutedCell" : "",
-                          ]
-                            .filter(Boolean)
-                            .join(" ")}
-                        >
-                          {cell.value}
-                        </td>
-                      ))}
+                  <tr>
+                    <td className="timesheetTitleRow" colSpan={3 + timesheetData.workers.length * 2}>
+                      {timesheetData.title}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="timesheetMutedCell" />
+                    <td className="timesheetMutedCell" />
+                    <td className="timesheetHeaderRow">Период</td>
+                    <td className="timesheetHeaderRow" colSpan={timesheetData.workers.length * 2}>
+                      {timesheetData.fromDate} - {timesheetData.toDate} · {timesheetData.timezone}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="timesheetMutedCell" />
+                    <td className="timesheetMutedCell" />
+                    <td className="timesheetHeaderRow">дата</td>
+                    {timesheetData.workers.map((worker) => (
+                      <td key={worker.workerId} className="timesheetHeaderRow" colSpan={2}>
+                        {worker.lastName} {worker.firstName}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="timesheetMutedCell" />
+                    <td className="timesheetMutedCell" />
+                    <td className="timesheetHeaderRow">смена / часы</td>
+                    {timesheetData.workers.flatMap((worker) => [
+                      <td key={`${worker.workerId}-shift`} className="timesheetHeaderRow">смен</td>,
+                      <td key={`${worker.workerId}-hours`} className="timesheetHeaderRow">час</td>,
+                    ])}
+                  </tr>
+                  {timesheetData.rows.map((row) => (
+                    <tr key={row.date}>
+                      <td className="timesheetMutedCell" />
+                      <td className="timesheetMutedCell" />
+                      <td className="timesheetMutedCell">{row.date}</td>
+                      {row.cells.flatMap((cell) => [
+                        <td key={`${row.date}-${cell.workerId}-shift`} className={cell.shiftEquivalent > 0 ? "timesheetFilledCell" : ""}>
+                          {cell.shiftEquivalent > 0 ? cell.shiftEquivalent.toFixed(3) : ""}
+                        </td>,
+                        <td key={`${row.date}-${cell.workerId}-hours`} className={cell.hours > 0 ? "timesheetFilledCell" : ""}>
+                          {cell.hours > 0 ? cell.hours.toFixed(1) : ""}
+                        </td>,
+                      ])}
                     </tr>
                   ))}
                 </tbody>
@@ -879,42 +897,6 @@ function ShieldIcon() {
   );
 }
 
-async function loadTimesheetPreview(from: string, to: string): Promise<TimesheetTable> {
-  const res = await fetch(timesheetDownloadUrl(from, to), {
-    headers: authHeader(),
-  });
-  if (!res.ok) {
-    throw new Error(`Не удалось загрузить XLSX: HTTP ${res.status}`);
-  }
-
-  const buf = await res.arrayBuffer();
-  const workbook = XLSX.read(buf, { type: "array", cellDates: true });
-  const sheetName = workbook.SheetNames[0];
-  const sheet = workbook.Sheets[sheetName];
-  const raw = XLSX.utils.sheet_to_json<(string | number | Date | null)[]>(sheet, {
-    header: 1,
-    raw: false,
-    blankrows: false,
-  });
-
-  const rows = raw.map((row, rowIndex) =>
-    (row as (string | number | Date | null)[]).map((cell, cellIndex) => {
-      const value = cell == null ? "" : String(cell);
-      const filled = rowIndex >= 4 && cellIndex >= 3 && value.trim() !== "";
-      const muted = rowIndex >= 4 && cellIndex <= 2;
-      return {
-        value,
-        tone: filled ? "filled" : muted ? "muted" : undefined,
-      } satisfies TimesheetCell;
-    }),
-  );
-
-  return {
-    title: rows[0]?.[2]?.value || "Табель",
-    rows,
-  };
-}
-
 function toIsoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -937,4 +919,3 @@ function roleTitle(role: UserResponseDto["role"]): string {
 function statusTitle(status: "ACTIVE" | "INACTIVE"): string {
   return status === "ACTIVE" ? "Активен" : "Неактивен";
 }
-
