@@ -254,7 +254,7 @@ fun MainScreen(
             }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (tabs.getOrNull(tab)) {
-                    "Рабочие" -> WorkersTab(user)
+                    "Рабочие" -> WorkersTab(user, snackbarHostState)
                     "Пользователи" -> AdminUsersTab(user.id)
                     "Отчёт" -> ReportTab()
                     "Профиль" -> ProfileTab(user, isOnline, onLoggedOut)
@@ -527,7 +527,7 @@ private fun ProfileTab(user: UserResponseDto, isOnline: Boolean, onLoggedOut: ()
 }
 
 @Composable
-private fun WorkersTab(user: UserResponseDto) {
+private fun WorkersTab(user: UserResponseDto, snackbarHostState: SnackbarHostState) {
     if (user.role == "ADMIN") {
         AdminWorkersTab()
         return
@@ -539,7 +539,6 @@ private fun WorkersTab(user: UserResponseDto) {
     var activeSessions by remember { mutableStateOf<List<LocalActiveSession>>(emptyList()) }
     var serverActiveByWorkerId by remember { mutableStateOf<Map<String, String>>(emptyMap()) } // workerId -> sessionId
     var pendingEndingSessionIds by remember { mutableStateOf<Set<String>>(emptySet()) }
-    var msg by remember { mutableStateOf<String?>(null) }
     val sessions = AppContainer.sessionStateRepository
     val queue = AppContainer.batchQueue
     val cache = AppContainer.activeSessionsCache
@@ -609,7 +608,6 @@ private fun WorkersTab(user: UserResponseDto) {
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        msg?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
         Text("Список рабочих", style = MaterialTheme.typography.titleMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TextButton(onClick = { load() }) { Text("Обновить") }
@@ -647,7 +645,6 @@ private fun WorkersTab(user: UserResponseDto) {
                         )
                         .clickable(enabled = w.status == "ACTIVE") {
                             scope.launch {
-                                msg = null
                                 val existing = sessions.getActiveFor(w.id)
                                 val cachedServerSessionIdNow = serverActiveByWorkerId[w.id]
                                 // Если END уже в очереди для этой серверной сессии, считаем её "логически остановленной"
@@ -682,7 +679,7 @@ private fun WorkersTab(user: UserResponseDto) {
                                     // локально считаем смену закрытой сразу
                                     sessions.removeBySessionId(effectiveServerSessionId)
                                     activeSessions = mergedWithServer(sessions.getActiveSessions())
-                                    msg = "Конец смены добавлен в очередь"
+                                    snackbarHostState.showSnackbar("Конец смены добавлен в очередь")
                                 } else if (existing == null) {
                                         val sessionId = UUID.randomUUID().toString()
                                         val startAt = OffsetDateTime.now(ZoneOffset.UTC).toString()
@@ -703,10 +700,10 @@ private fun WorkersTab(user: UserResponseDto) {
                                         queue.enqueue(batch)
                                         sessions.upsert(LocalActiveSession(workerId = w.id, sessionId = sessionId, startAt = startAt))
                                         activeSessions = mergedWithServer(sessions.getActiveSessions())
-                                        msg = "Старт добавлен в очередь"
+                                        snackbarHostState.showSnackbar("Старт добавлен в очередь")
                                 } else {
                                         if (existing.sessionId in pendingEndingSessionIds) {
-                                            msg = "Завершение смены уже в очереди"
+                                            snackbarHostState.showSnackbar("Завершение смены уже в очереди")
                                             return@launch
                                         }
                                         val sessionId = existing.sessionId
@@ -733,7 +730,7 @@ private fun WorkersTab(user: UserResponseDto) {
                                         // локально считаем смену закрытой сразу → можно стартовать новую даже офлайн
                                         sessions.remove(w.id)
                                         activeSessions = mergedWithServer(sessions.getActiveSessions())
-                                        msg = "Конец смены добавлен в очередь"
+                                        snackbarHostState.showSnackbar("Конец смены добавлен в очередь")
                                 }
                             }
                         },

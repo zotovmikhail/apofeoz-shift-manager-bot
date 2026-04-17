@@ -11,6 +11,7 @@ import com.apofeoz.backend.api.TimesheetReportResponse
 import com.apofeoz.backend.api.TimesheetWorkerResponse
 import com.apofeoz.backend.data.SessionEntity
 import com.apofeoz.backend.data.SessionRepository
+import com.apofeoz.backend.data.WorkerEntity
 import com.apofeoz.backend.data.UserRepository
 import com.apofeoz.backend.data.WorkerRepository
 import com.apofeoz.backend.domain.Role
@@ -51,11 +52,12 @@ class ReportService(
         }
         val dayStart = reportDate.atStartOfDay(zone).toOffsetDateTime()
         val dayEnd = reportDate.plusDays(1).atStartOfDay(zone).toOffsetDateTime()
-
-        val activeWorkers = workers.listActive()
+        val closed = sessions.listClosedSessionsOverlapping(dayStart, dayEnd)
+        val reportWorkers = reportWorkers(closed)
+        val hoursByDay = aggregateHoursByWorkerAndDate(closed, zone, dayStart, dayEnd)
         val shiftNorm = 8.0
-        val rows = activeWorkers.map { w ->
-            val hours = sessions.sumClosedHoursForWorkerOnDay(w.id, dayStart, dayEnd)
+        val rows = reportWorkers.map { w ->
+            val hours = hoursByDay[w.id to reportDate] ?: 0.0
             val shiftEq = (hours / shiftNorm).roundShiftEquivalentToThreeDecimals()
             val foremanUser = users.findById(w.foremanId)
             val foremanName = foremanUser?.let { "${it.firstName} ${it.lastName}" }
@@ -87,11 +89,15 @@ class ReportService(
             throw ApiException(HttpStatusCode.Forbidden, "forbidden", "Admin only")
         }
         val range = parseRange(from, to)
-
-        val activeWorkers = workers.listActive()
+        val closed = sessions.listClosedSessionsOverlapping(range.start, range.endExclusive)
+        val reportWorkers = reportWorkers(closed)
+        val hoursByDay = aggregateHoursByWorkerAndDate(closed, range.zone, range.start, range.endExclusive)
         val shiftNorm = 8.0
-        val rows = activeWorkers.map { w ->
-            val hours = sessions.sumClosedHoursForWorkerInRange(w.id, range.start, range.endExclusive)
+        val rows = reportWorkers.map { w ->
+            val hours = hoursByDay
+                .asSequence()
+                .filter { (key, _) -> key.first == w.id }
+                .sumOf { it.value }
             val shiftEq = (hours / shiftNorm).roundShiftEquivalentToThreeDecimals()
             val foremanUser = users.findById(w.foremanId)
             val foremanName = foremanUser?.let { "${it.firstName} ${it.lastName}" }
@@ -123,11 +129,11 @@ class ReportService(
             throw ApiException(HttpStatusCode.Forbidden, "forbidden", "Admin only")
         }
         val range = parseRange(from, to)
-        val activeWorkers = workers.listActive()
         val closed = sessions.listClosedSessionsOverlapping(range.start, range.endExclusive)
+        val reportWorkers = reportWorkers(closed)
         val hoursByDay = aggregateHoursByWorkerAndDate(closed, range.zone, range.start, range.endExclusive)
         val shiftNorm = 8.0
-        val workerColumns = activeWorkers.map { worker ->
+        val workerColumns = reportWorkers.map { worker ->
             val foremanUser = users.findById(worker.foremanId)
             TimesheetWorkerResponse(
                 workerId = worker.id.toString(),
@@ -168,13 +174,12 @@ class ReportService(
             throw ApiException(HttpStatusCode.Forbidden, "forbidden", "Admin only")
         }
         val range = parseRange(from, to)
-
-        val activeWorkers = workers.listActive()
         val closed = sessions.listClosedSessionsOverlapping(range.start, range.endExclusive)
+        val reportWorkers = reportWorkers(closed)
         val hoursByDay = aggregateHoursByWorkerAndDate(closed, range.zone, range.start, range.endExclusive)
         val shiftNorm = 8.0
         return TimesheetXlsxWriter.write(
-            workers = activeWorkers,
+            workers = reportWorkers,
             fromDate = range.fromDate,
             toDate = range.toDate,
             reportTimeZone = cfg.reportTimeZone,
@@ -232,6 +237,23 @@ class ReportService(
             val rounded = kotlin.math.round(sec / 60.0) * 60.0
             rounded / 3600.0
         }
+    }
+
+    private suspend fun reportWorkers(closedSessions: List<SessionEntity>): List<WorkerEntity> {
+        val activeWorkers = workers.listActive()
+        val activeIds = activeWorkers.mapTo(linkedSetOf()) { it.id }
+        if (closedSessions.isEmpty()) {
+            return activeWorkers
+        }
+
+        val workersById = workers.listAll().associateBy { it.id }
+        val historical = closedSessions
+            .mapNotNull { session -> workersById[session.workerId] }
+            .filter { worker -> worker.id !in activeIds }
+
+        return (activeWorkers + historical)
+            .distinctBy { it.id }
+            .sortedWith(compareBy<WorkerEntity> { it.lastName }.thenBy { it.firstName }.thenBy { it.id.toString() })
     }
 
     private fun distributeSessionToDays(

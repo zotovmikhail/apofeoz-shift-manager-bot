@@ -6,10 +6,12 @@ import com.apofeoz.backend.api.FailedBatchDetailResponse
 import com.apofeoz.backend.api.HoursReportResponse
 import com.apofeoz.backend.api.LoginRequest
 import com.apofeoz.backend.api.PatchUserRequest
+import com.apofeoz.backend.api.PatchWorkerRequest
 import com.apofeoz.backend.api.RegisterRequest
 import com.apofeoz.backend.api.SyncBatchRequest
 import com.apofeoz.backend.api.SyncBatchResponse
 import com.apofeoz.backend.api.SyncEventInput
+import com.apofeoz.backend.api.TimesheetReportResponse
 import com.apofeoz.backend.api.TokenResponse
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -328,6 +330,108 @@ class BackendIntegrationTest {
                 bearerAuth(foremanTok.accessToken)
             }
             assertEquals(HttpStatusCode.NoContent, del.status)
+        }
+    }
+
+    @Test
+    fun rangeReportAndTimesheetIncludeInactiveWorkerHistoryAndClipByRange() = runBlocking {
+        testApplication {
+            environment { config = appConfig() }
+            application { module() }
+            val c = createClient { install(ContentNegotiation) { json(jsonParser) } }
+            c.get("/health")
+
+            val adminTok = c.post("/api/v1/auth/login") {
+                contentType(ContentType.Application.Json)
+                setBody(LoginRequest(login = "admin@test.local", password = "AdminPass12345!"))
+            }.body<TokenResponse>()
+
+            val foremanEmail = "fm3-${UUID.randomUUID()}@test.local"
+            val regForeman = c.post("/api/v1/auth/register") {
+                contentType(ContentType.Application.Json)
+                setBody(RegisterRequest(email = foremanEmail, firstName = "Fore", lastName = "Three", password = "password123"))
+            }
+            val foremanUserId = regForeman.body<TokenResponse>().let { t ->
+                c.get("/api/v1/users/me") { bearerAuth(t.accessToken) }.body<com.apofeoz.backend.api.UserResponse>().id
+            }
+
+            c.patch("/api/v1/users/$foremanUserId") {
+                bearerAuth(adminTok.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(PatchUserRequest(role = "FOREMAN"))
+            }
+
+            val foremanTok = c.post("/api/v1/auth/login") {
+                contentType(ContentType.Application.Json)
+                setBody(LoginRequest(login = foremanEmail, password = "password123"))
+            }.body<TokenResponse>()
+
+            val worker = c.post("/api/v1/workers") {
+                bearerAuth(adminTok.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(CreateWorkerRequest(firstName = "Hist", lastName = "Worker", foremanId = foremanUserId))
+            }.body<com.apofeoz.backend.api.WorkerResponse>()
+
+            val workerId = worker.id
+            val sessionId = UUID.randomUUID().toString()
+            val batchUid = "batch-hist-${UUID.randomUUID()}"
+
+            val batch = SyncBatchRequest(
+                batchUid = batchUid,
+                submittedAt = "2025-06-11T01:40:00Z",
+                events = listOf(
+                    SyncEventInput(
+                        "START_SESSION",
+                        buildJsonObject {
+                            put("sessionId", JsonPrimitive(sessionId))
+                            put("workerId", JsonPrimitive(workerId))
+                            put("startAt", JsonPrimitive("2025-06-10T22:00:00Z"))
+                        },
+                    ),
+                    SyncEventInput(
+                        "END_SESSION",
+                        buildJsonObject {
+                            put("sessionId", JsonPrimitive(sessionId))
+                            put("endAt", JsonPrimitive("2025-06-11T01:30:00Z"))
+                        },
+                    ),
+                ),
+            )
+
+            val sync = c.post("/api/v1/sync/batch") {
+                bearerAuth(foremanTok.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(batch)
+            }
+            assertEquals(HttpStatusCode.OK, sync.status, sync.bodyAsText())
+
+            val deactivateWorker = c.patch("/api/v1/workers/$workerId") {
+                bearerAuth(adminTok.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(PatchWorkerRequest(status = "INACTIVE"))
+            }
+            assertEquals(HttpStatusCode.OK, deactivateWorker.status, deactivateWorker.bodyAsText())
+
+            val report = c.get("/api/v1/reports/hours-by-worker-range?from=2025-06-11&to=2025-06-11") {
+                bearerAuth(adminTok.accessToken)
+            }
+            assertEquals(HttpStatusCode.OK, report.status, report.bodyAsText())
+            val reportBody = report.body<HoursReportResponse>()
+            val row = reportBody.rows.find { it.workerId == workerId }
+            assertTrue(row != null, "inactive worker with history must remain in range report")
+            assertEquals(1.5, row!!.hours, 0.01)
+            assertEquals(0.188, row.shiftEquivalent, 0.001)
+
+            val timesheet = c.get("/api/v1/reports/timesheet?from=2025-06-11&to=2025-06-11") {
+                bearerAuth(adminTok.accessToken)
+            }
+            assertEquals(HttpStatusCode.OK, timesheet.status, timesheet.bodyAsText())
+            val timesheetBody = timesheet.body<TimesheetReportResponse>()
+            assertTrue(timesheetBody.workers.any { it.workerId == workerId }, "inactive worker with history must remain in timesheet")
+            val dayRow = timesheetBody.rows.single { it.date == "2025-06-11" }
+            val dayCell = dayRow.cells.single { it.workerId == workerId }
+            assertEquals(1.5, dayCell.hours, 0.01)
+            assertEquals(0.188, dayCell.shiftEquivalent, 0.001)
         }
     }
 

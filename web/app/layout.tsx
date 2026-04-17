@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { ReactNode } from "react";
 
 export const metadata: Metadata = {
-  title: "Apofeoz Admin",
-  description: "Admin panel for Apofeoz shift manager",
+  title: "АПОФЕОЗ Админка",
+  description: "Административная панель АПОФЕОЗ Shift Manager",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -14,4 +14,3 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     </html>
   );
 }
-

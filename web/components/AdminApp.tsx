@@ -182,7 +182,7 @@ function LoginForm({ onLogin }: { onLogin: (u: UserResponseDto) => void }) {
     <main className="shell shellCentered">
       <section className="loginHero">
         <div className="loginBrand">
-          <span className="brandBadge">Apofeoz</span>
+          <span className="brandBadge">АПОФЕОЗ</span>
           <p className="eyebrow">Web-админка</p>
           <h1>Единый центр управления сменами и табелем.</h1>
           <p className="mutedText">
@@ -289,7 +289,7 @@ function AdminPanel({
       <section className="dashboardGrid">
         <aside className="sidebarPanel">
           <div className="sidebarTop">
-            <span className="brandBadge">Apofeoz</span>
+            <span className="brandBadge">АПОФЕОЗ</span>
             <div>
               <p className="eyebrow">Админ-сессия</p>
               <h1 className="sidebarTitle">Пульт управления</h1>
