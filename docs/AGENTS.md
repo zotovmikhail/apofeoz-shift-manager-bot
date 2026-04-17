@@ -21,7 +21,7 @@
 - Изменение API/ролей/auth/sync: сначала `CODEX_PROJECT_STATE.md`, затем `BACKEND_ARCHITECTURE.md`, потом `backend/src/main/resources/openapi.yaml`.
 - Изменение офлайн-синхронизации Android: `CODEX_PROJECT_STATE.md`, `MOBILE_ARCHITECTURE.md`, затем `android/.../work` и `android/.../data/local`.
 - Изменение отчётов/табеля: `REPORTING.md`, `CODEX_PROJECT_STATE.md`, затем `ReportService`/`TimesheetXlsxWriter`.
-- Изменение UI-темы: `docs/ui-reference/THEME_TOKENS.md`, `docs/ui-mockups/`, затем `android/.../presentation/theme`.
+- Изменение UI-темы: сначала `CODEX_PROJECT_STATE.md`, затем `docs/ui-reference/THEME_TOKENS.md`, затем текущая реализация `web/`, и только потом `android/.../presentation/theme`.
 - Изменение инфраструктуры/деплоя: `infra/terraform/README.md`, затем `infra/terraform/*.tf` и `infra/deploy/*`.
 - Изменение web-админки: `web/README.md`, затем `web/app`, `web/components`, `web/lib`.
 
@@ -30,3 +30,4 @@
 - Не предполагать отдельные REST CRUD для смен: смены идут через `POST /api/v1/sync/batch`.
 - Не предполагать офлайн-очередь для workers: workers только онлайн API.
 - Не считать документы из `docs/archive/` актуальным контрактом.
+- Не считать старые мобильные мокапы финальным visual source of truth: главный актуальный стиль сейчас задаёт `web/`.

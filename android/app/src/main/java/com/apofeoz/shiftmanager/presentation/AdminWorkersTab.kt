@@ -12,8 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -87,8 +85,12 @@ fun AdminWorkersTab() {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text("Бригады", style = MaterialTheme.typography.titleMedium)
+        SectionHeading(
+            eyebrow = "Состав бригад",
+            title = "Рабочие по прорабам",
+        )
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        InlineHint("Создание и переназначение рабочих здесь работают только онлайн.")
 
         LazyColumn(
             modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -135,11 +137,8 @@ fun AdminWorkersTab() {
                 .sorted()
             items(unknownForemen, key = { "unknown-$it" }) { fid ->
                 val list = groups[fid].orEmpty().sortedWith(compareBy<WorkerResponseDto>({ it.lastName }, { it.firstName }))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                ) {
-                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ApofeozPanel(modifier = Modifier.fillMaxWidth()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(foremanNameById[fid] ?: "FOREMAN $fid", style = MaterialTheme.typography.titleSmall)
                         Text("Работников: ${list.size}", style = MaterialTheme.typography.bodySmall)
                         list.forEach { w -> WorkerRow(w, canReassign = false, onReassign = {}) }
@@ -254,18 +253,26 @@ private fun ForemanSectionCard(
     var addLn by remember(foreman.id) { mutableStateOf("") }
     var addOpen by remember(foreman.id) { mutableStateOf(false) }
 
-    Card(
+    ApofeozPanel(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        accent = workers.isNotEmpty(),
     ) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("${foreman.firstName} ${foreman.lastName}", style = MaterialTheme.typography.titleSmall)
-            Text(
-                (foreman.email ?: foreman.phone ?: foreman.id),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text("Работников: ${workers.size}", style = MaterialTheme.typography.bodySmall)
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("${foreman.firstName} ${foreman.lastName}", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        (foreman.email ?: foreman.phone ?: foreman.id),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                StatusChip("Рабочих: ${workers.size}", accent = workers.isNotEmpty())
+            }
 
             if (workers.isEmpty()) {
                 Text(
@@ -335,12 +342,13 @@ private fun WorkerRow(
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Column(Modifier.weight(1f)) {
-            Text("${w.firstName} ${w.lastName}${extraLabel.orEmpty()}")
-            Text(
-                "Статус: ${w.status}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Text("${w.firstName} ${w.lastName}${extraLabel.orEmpty()}", style = MaterialTheme.typography.titleSmall)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                StatusChip(w.status, warning = w.status != "ACTIVE")
+                if (extraLabel != null) {
+                    StatusChip("BRIGADIER", accent = true)
+                }
+            }
         }
         TextButton(
             onClick = { onReassign(w) },
@@ -362,4 +370,3 @@ private fun HttpException.userVisibleMessage(): String {
 
 private fun detailText(el: JsonElement): String =
     (el as? JsonPrimitive)?.contentOrNull ?: el.toString()
-

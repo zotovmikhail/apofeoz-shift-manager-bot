@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Lock
@@ -96,175 +97,184 @@ fun LoginScreen(onSuccess: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             Spacer(Modifier.height(16.dp))
-            Card(
-                modifier = Modifier.size(72.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = scheme.surface),
-                border = BorderStroke(1.dp, scheme.outline),
-            ) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Icon(
-                        Icons.Filled.Business,
-                        contentDescription = null,
-                        modifier = Modifier.size(36.dp),
-                        tint = scheme.primary,
-                    )
-                }
-            }
-            Text(
-                "Апофеоз".uppercase(Locale.getDefault()),
-                style = MaterialTheme.typography.displaySmall.copy(letterSpacing = 2.4.sp),
-                color = scheme.onBackground,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                softWrap = false,
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                Box(
-                    Modifier
-                        .width(18.dp)
-                        .height(1.dp)
-                        .clip(RoundedCornerShape(1.dp))
-                        .background(ApofeozColors.Primary.copy(alpha = 0.45f)),
-                )
-                Text(
-                    "ТЕРМИНАЛ УПРАВЛЕНИЯ",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = scheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 10.dp),
-                )
-                Box(
-                    Modifier
-                        .width(18.dp)
-                        .height(1.dp)
-                        .clip(RoundedCornerShape(1.dp))
-                        .background(ApofeozColors.Primary.copy(alpha = 0.45f)),
-                )
-            }
-            Spacer(Modifier.height(8.dp))
-
-            if (isRegister) {
-                OutlinedTextField(
-                    value = firstName,
-                    onValueChange = { firstName = it },
-                    label = { Text("ИМЯ") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = fieldColors,
-                )
-                OutlinedTextField(
-                    value = lastName,
-                    onValueChange = { lastName = it },
-                    label = { Text("ФАМИЛИЯ") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = fieldColors,
-                )
-            }
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text(if (isRegister) "EMAIL" else "EMAIL ИЛИ ТЕЛЕФОН") },
+            ApofeozPanel(
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                colors = fieldColors,
-                leadingIcon = {
-                    Icon(Icons.Filled.Person, contentDescription = null)
-                },
-            )
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("КОД ДОСТУПА") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                colors = fieldColors,
-                visualTransformation = PasswordVisualTransformation(),
-                leadingIcon = {
-                    Icon(Icons.Filled.Lock, contentDescription = null)
-                },
-            )
-            error?.let {
-                Text(
-                    it,
-                    color = scheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            Spacer(Modifier.height(8.dp))
-            Button(
-                onClick = {
-                    error = null
-                    loading = true
-                    scope.launch {
-                        try {
-                            if (isRegister) {
-                                val t = api.register(
-                                    RegisterRequestDto(
-                                        email = email.trim().takeIf { it.isNotEmpty() },
-                                        firstName = firstName.trim(),
-                                        lastName = lastName.trim(),
-                                        password = password,
-                                    ),
-                                )
-                                tokens.save(t.accessToken, t.refreshToken)
-                            } else {
-                                val t = api.login(LoginRequestDto(login = email.trim(), password = password))
-                                tokens.save(t.accessToken, t.refreshToken)
-                            }
-                            OutboundSyncScheduler.schedule(context)
-                            onSuccess()
-                        } catch (e: HttpException) {
-                            error = "Ошибка ${e.code()}: ${e.message()}"
-                        } catch (e: Exception) {
-                            error = e.message ?: e.toString()
-                        } finally {
-                            loading = false
+                accent = true,
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+                    Card(
+                        modifier = Modifier.size(72.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(containerColor = scheme.surface),
+                        border = BorderStroke(1.dp, scheme.outline),
+                    ) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Filled.Business,
+                                contentDescription = null,
+                                modifier = Modifier.size(36.dp),
+                                tint = scheme.primary,
+                            )
                         }
                     }
-                },
-                enabled = !loading && email.isNotBlank() && password.length >= 8 &&
-                    (!isRegister || (firstName.isNotBlank() && lastName.isNotBlank())),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp),
-                shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = scheme.primary,
-                    contentColor = scheme.onPrimary,
-                    disabledContainerColor = scheme.surfaceVariant,
-                    disabledContentColor = scheme.onSurfaceVariant,
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp, pressedElevation = 0.dp),
-            ) {
-                if (loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(22.dp),
-                        color = scheme.onPrimary,
-                        strokeWidth = 2.dp,
-                    )
-                } else {
                     Text(
-                        if (isRegister) "РЕГИСТРАЦИЯ" else "АВТОРИЗАЦИЯ",
-                        style = MaterialTheme.typography.labelLarge,
+                        "Апофеоз".uppercase(Locale.getDefault()),
+                        style = MaterialTheme.typography.displaySmall.copy(letterSpacing = 2.4.sp),
+                        color = scheme.onBackground,
+                        textAlign = TextAlign.Start,
+                        maxLines = 1,
+                        softWrap = false,
                     )
+                    Text(
+                        "Единый операторский контур для смен, ролей и табеля.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = scheme.onSurfaceVariant,
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        StatusChip("ANDROID", accent = true)
+                        StatusChip("JWT + REFRESH")
+                        StatusChip("OFFLINE READY")
+                    }
                 }
             }
-            TextButton(onClick = { isRegister = !isRegister; error = null }) {
-                Text(
-                    if (isRegister) "Уже есть аккаунт? Войти" else "Нет аккаунта? Регистрация",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = scheme.primary,
-                )
+            ApofeozPanel(modifier = Modifier.fillMaxWidth()) {
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    SectionHeading(
+                        eyebrow = if (isRegister) "Новый доступ" else "Авторизация",
+                        title = if (isRegister) "Регистрация оператора" else "Вход в мобильный терминал",
+                    )
+                    HorizontalDivider(color = scheme.outline.copy(alpha = 0.8f))
+
+                    if (isRegister) {
+                        OutlinedTextField(
+                            value = firstName,
+                            onValueChange = { firstName = it },
+                            label = { Text("ИМЯ") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(16.dp),
+                            colors = fieldColors,
+                        )
+                        OutlinedTextField(
+                            value = lastName,
+                            onValueChange = { lastName = it },
+                            label = { Text("ФАМИЛИЯ") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(16.dp),
+                            colors = fieldColors,
+                        )
+                    }
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text(if (isRegister) "EMAIL" else "EMAIL ИЛИ ТЕЛЕФОН") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = fieldColors,
+                        leadingIcon = {
+                            Icon(Icons.Filled.Person, contentDescription = null)
+                        },
+                    )
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("КОД ДОСТУПА") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = fieldColors,
+                        visualTransformation = PasswordVisualTransformation(),
+                        leadingIcon = {
+                            Icon(Icons.Filled.Lock, contentDescription = null)
+                        },
+                    )
+                    error?.let {
+                        Text(
+                            it,
+                            color = scheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    InlineHint(
+                        if (isRegister) {
+                            "Регистрация сразу создаёт доступ в мобильный терминал."
+                        } else {
+                            "Используйте тот же аккаунт и роли, что и в web-консоли."
+                        },
+                    )
+                    Button(
+                        onClick = {
+                            error = null
+                            loading = true
+                            scope.launch {
+                                try {
+                                    if (isRegister) {
+                                        val t = api.register(
+                                            RegisterRequestDto(
+                                                email = email.trim().takeIf { it.isNotEmpty() },
+                                                firstName = firstName.trim(),
+                                                lastName = lastName.trim(),
+                                                password = password,
+                                            ),
+                                        )
+                                        tokens.save(t.accessToken, t.refreshToken)
+                                    } else {
+                                        val t = api.login(LoginRequestDto(login = email.trim(), password = password))
+                                        tokens.save(t.accessToken, t.refreshToken)
+                                    }
+                                    OutboundSyncScheduler.schedule(context)
+                                    onSuccess()
+                                } catch (e: HttpException) {
+                                    error = "Ошибка ${e.code()}: ${e.message()}"
+                                } catch (e: Exception) {
+                                    error = e.message ?: e.toString()
+                                } finally {
+                                    loading = false
+                                }
+                            }
+                        },
+                        enabled = !loading && email.isNotBlank() && password.length >= 8 &&
+                            (!isRegister || (firstName.isNotBlank() && lastName.isNotBlank())),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp),
+                        shape = RoundedCornerShape(50),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = scheme.primary,
+                            contentColor = scheme.onPrimary,
+                            disabledContainerColor = scheme.surfaceVariant,
+                            disabledContentColor = scheme.onSurfaceVariant,
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp, pressedElevation = 0.dp),
+                    ) {
+                        if (loading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(22.dp),
+                                color = scheme.onPrimary,
+                                strokeWidth = 2.dp,
+                            )
+                        } else {
+                            Text(
+                                if (isRegister) "РЕГИСТРАЦИЯ" else "АВТОРИЗАЦИЯ",
+                                style = MaterialTheme.typography.labelLarge,
+                            )
+                        }
+                    }
+                    TextButton(onClick = { isRegister = !isRegister; error = null }) {
+                        Text(
+                            if (isRegister) "Уже есть аккаунт? Войти" else "Нет аккаунта? Регистрация",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = scheme.primary,
+                        )
+                    }
+                }
             }
         }
     }

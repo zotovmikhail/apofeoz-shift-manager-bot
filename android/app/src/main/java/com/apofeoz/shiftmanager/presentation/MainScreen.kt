@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -54,8 +56,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -150,19 +155,21 @@ fun MainScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        Icon(
-                            Icons.Filled.Business,
-                            contentDescription = null,
-                            modifier = Modifier.size(28.dp),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                        Text(
-                            "Апофеоз".uppercase(Locale.getDefault()),
-                            style = MaterialTheme.typography.titleLarge.copy(letterSpacing = 2.4.sp),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            softWrap = false,
-                        )
+                        IdentityBadge(userInitials(user))
+                        Column {
+                            Text(
+                                "Апофеоз".uppercase(Locale.getDefault()),
+                                style = MaterialTheme.typography.titleLarge.copy(letterSpacing = 2.4.sp),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                softWrap = false,
+                            )
+                            Text(
+                                "мобильный терминал",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 },
                 actions = {
@@ -173,20 +180,10 @@ fun MainScreen(
                     ) {
                         Column(horizontalAlignment = Alignment.End) {
                             if (pendingBatches > 0) {
-                                Text(
-                                    "Очередь: $pendingBatches",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    maxLines = 1,
-                                )
+                                StatusChip("Очередь: $pendingBatches", accent = true)
                             }
                             if (!isOnline) {
-                                Text(
-                                    "OFFLINE",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.error,
-                                    maxLines = 1,
-                                )
+                                StatusChip("OFFLINE", warning = true)
                             }
                         }
                         Column(horizontalAlignment = Alignment.End) {
@@ -206,20 +203,7 @@ fun MainScreen(
                                 modifier = Modifier.widthIn(max = 128.dp),
                             )
                         }
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .border(2.dp, ApofeozColors.PrimaryBorder, CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                userInitials(user),
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        }
+                        IdentityBadge(userInitials(user), modifier = Modifier.size(40.dp))
                     }
                 },
             )
@@ -229,7 +213,7 @@ fun MainScreen(
             val tabIndex = tab.coerceAtMost(tabs.lastIndex)
             PrimaryScrollableTabRow(
                 selectedTabIndex = tabIndex,
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = MaterialTheme.colorScheme.background,
                 contentColor = MaterialTheme.colorScheme.onSurface,
                 edgePadding = 12.dp,
                 divider = {},
@@ -239,13 +223,29 @@ fun MainScreen(
                         selected = tab == i,
                         onClick = { tab = i },
                         text = {
-                            Text(
-                                title,
-                                style = MaterialTheme.typography.labelLarge,
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Visible,
-                            )
+                            Row(
+                                modifier = Modifier.wrapContentWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Icon(
+                                    imageVector = when (title) {
+                                        "Рабочие" -> Icons.Filled.People
+                                        "Пользователи" -> Icons.Filled.Shield
+                                        "Отчёт" -> Icons.Filled.Assessment
+                                        else -> Icons.Filled.Person
+                                    },
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                                Text(
+                                    title,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Visible,
+                                )
+                            }
                         },
                         selectedContentColor = MaterialTheme.colorScheme.primary,
                         unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -291,21 +291,27 @@ private fun ProfileTab(user: UserResponseDto, isOnline: Boolean, onLoggedOut: ()
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text("${user.firstName} ${user.lastName}", style = MaterialTheme.typography.titleLarge)
-        Text("Роль: ${user.role}")
-        Text("Статус: ${user.status}")
-        Text("Интернет: " + if (isOnline) "Online" else "Offline")
-        user.email?.let { Text("Email: $it") }
-        user.phone?.let { Text("Телефон: $it") }
+        ApofeozPanel(modifier = Modifier.fillMaxWidth(), accent = true) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SectionHeading(
+                    eyebrow = "Текущая сессия",
+                    title = "${user.firstName} ${user.lastName}",
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    StatusChip(userRoleTitle(user.role), accent = user.role == "ADMIN")
+                    StatusChip(if (user.status == "ACTIVE") "Активен" else "Неактивен", warning = user.status != "ACTIVE")
+                    StatusChip(if (isOnline) "ONLINE" else "OFFLINE", warning = !isOnline)
+                }
+                user.email?.let { Text("Email: $it") }
+                user.phone?.let { Text("Телефон: $it") }
+            }
+        }
         if (user.role == "FOREMAN") {
             val context = LocalContext.current
             val testOverride = AppContainer.testConnectivityOverride
             val forceOffline by testOverride.forceOfflineFlow.collectAsState(initial = false)
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            ) {
-                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            ApofeozPanel(modifier = Modifier.fillMaxWidth()) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Тест: симуляция offline", style = MaterialTheme.typography.titleSmall)
                     Text(
                         "Только для проверки очереди и UI. Пока включено, отправка батчей на сервер не выполняется.",
@@ -332,13 +338,13 @@ private fun ProfileTab(user: UserResponseDto, isOnline: Boolean, onLoggedOut: ()
                 }
             }
             Spacer(Modifier.height(8.dp))
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            ) {
-                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            ApofeozPanel(modifier = Modifier.fillMaxWidth()) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Синхронизация", style = MaterialTheme.typography.titleSmall)
-                    Text("Батчей в очереди: $pending", style = MaterialTheme.typography.bodyMedium)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        StatusChip("Очередь: $pending", accent = pending > 0)
+                        StatusChip("SYNC", accent = true)
+                    }
                     Text("Последняя синхронизация (UTC): $lastSyncAtText", style = MaterialTheme.typography.bodyMedium)
                     TextButton(onClick = {
                         scope.launch {
@@ -349,7 +355,7 @@ private fun ProfileTab(user: UserResponseDto, isOnline: Boolean, onLoggedOut: ()
                 }
             }
             Spacer(Modifier.height(8.dp))
-            Text("Ошибки синхронизации", style = MaterialTheme.typography.titleMedium)
+            SectionHeading(eyebrow = "Сбойные батчи", title = "Ошибки синхронизации")
             FailedTab()
 
             Spacer(Modifier.height(8.dp))
@@ -950,71 +956,82 @@ private fun ReportTab() {
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text("Отчёт по сменам", style = MaterialTheme.typography.titleMedium)
-        OutlinedTextField(
-            value = dateRangeText,
-            onValueChange = { dateRangeText = it },
-            label = { Text("Период (YYYY-MM-DD — YYYY-MM-DD)") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            trailingIcon = {
-                IconButton(onClick = { rangePickerOpen = true }) {
-                    Icon(Icons.Filled.DateRange, contentDescription = "Выбрать период")
-                }
-            },
-            supportingText = {
-                Text(
-                    "Можно ввести вручную или открыть календарь",
-                    style = MaterialTheme.typography.bodySmall,
+        ApofeozPanel(modifier = Modifier.fillMaxWidth(), accent = true) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SectionHeading(
+                    eyebrow = "Табель и аналитика",
+                    title = "Отчёт по сменам",
                 )
-            },
-        )
-        Button(
-            onClick = {
-                val pr = parseDateRange(dateRangeText) ?: return@Button
-                val fromApi = pr.first.format(dateFmt)
-                val toApi = pr.second.format(dateFmt)
-                scope.launch {
-                    err = null
-                    report = null
-                    try {
-                        report = AppContainer.api.reportRange(fromApi, toApi)
-                    } catch (e: HttpException) {
-                        err = if (e.code() == 403) "Только для ADMIN" else "Ошибка ${e.code()}: ${e.message()}"
-                    } catch (e: Exception) {
-                        err = e.message ?: e.toString()
-                    }
-                }
-            },
-            enabled = parsedRange != null,
-        ) { Text("Построить") }
-        OutlinedButton(
-            onClick = {
-                val pr = parseDateRange(dateRangeText) ?: return@OutlinedButton
-                val fromApi = pr.first.format(dateFmt)
-                val toApi = pr.second.format(dateFmt)
-                scope.launch {
-                    xlsxMsg = null
-                    try {
-                        val path = withContext(Dispatchers.IO) {
-                            val body = AppContainer.api.timesheetXlsx(fromApi, toApi)
-                            val bytes = body.use { it.bytes() }
-                            val dir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.filesDir
-                            val f = File(dir, "tabel_${fromApi}_${toApi}.xlsx")
-                            f.writeBytes(bytes)
-                            f.absolutePath
+                OutlinedTextField(
+                    value = dateRangeText,
+                    onValueChange = { dateRangeText = it },
+                    label = { Text("Период (YYYY-MM-DD — YYYY-MM-DD)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+                    trailingIcon = {
+                        IconButton(onClick = { rangePickerOpen = true }) {
+                            Icon(Icons.Filled.DateRange, contentDescription = "Выбрать период")
                         }
-                        xlsxMsg = "Табель сохранён: $path"
-                    } catch (e: HttpException) {
-                        xlsxMsg = if (e.code() == 403) "Только для ADMIN" else "Ошибка ${e.code()}: ${e.message()}"
-                    } catch (e: Exception) {
-                        xlsxMsg = e.message ?: e.toString()
-                    }
+                    },
+                    supportingText = {
+                        Text(
+                            "Можно ввести вручную или открыть календарь",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    },
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Button(
+                        onClick = {
+                            val pr = parseDateRange(dateRangeText) ?: return@Button
+                            val fromApi = pr.first.format(dateFmt)
+                            val toApi = pr.second.format(dateFmt)
+                            scope.launch {
+                                err = null
+                                report = null
+                                try {
+                                    report = AppContainer.api.reportRange(fromApi, toApi)
+                                } catch (e: HttpException) {
+                                    err = if (e.code() == 403) "Только для ADMIN" else "Ошибка ${e.code()}: ${e.message()}"
+                                } catch (e: Exception) {
+                                    err = e.message ?: e.toString()
+                                }
+                            }
+                        },
+                        enabled = parsedRange != null,
+                        modifier = Modifier.weight(1f),
+                    ) { Text("Построить") }
+                    OutlinedButton(
+                        onClick = {
+                            val pr = parseDateRange(dateRangeText) ?: return@OutlinedButton
+                            val fromApi = pr.first.format(dateFmt)
+                            val toApi = pr.second.format(dateFmt)
+                            scope.launch {
+                                xlsxMsg = null
+                                try {
+                                    val path = withContext(Dispatchers.IO) {
+                                        val body = AppContainer.api.timesheetXlsx(fromApi, toApi)
+                                        val bytes = body.use { it.bytes() }
+                                        val dir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.filesDir
+                                        val f = File(dir, "tabel_${fromApi}_${toApi}.xlsx")
+                                        f.writeBytes(bytes)
+                                        f.absolutePath
+                                    }
+                                    xlsxMsg = "Табель сохранён: $path"
+                                } catch (e: HttpException) {
+                                    xlsxMsg = if (e.code() == 403) "Только для ADMIN" else "Ошибка ${e.code()}: ${e.message()}"
+                                } catch (e: Exception) {
+                                    xlsxMsg = e.message ?: e.toString()
+                                }
+                            }
+                        },
+                        enabled = parsedRange != null,
+                        modifier = Modifier.weight(1f),
+                    ) { Text("Скачать XLSX") }
                 }
-            },
-            enabled = parsedRange != null,
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text("Скачать табель (.xlsx)") }
+            }
+        }
         err?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         xlsxMsg?.let { Text(it, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall) }
 
@@ -1029,18 +1046,20 @@ private fun ReportTab() {
             val fromStr = r.fromDate ?: parsedRange?.first?.format(dateFmt).orEmpty()
             val toStr = r.toDate ?: parsedRange?.second?.format(dateFmt).orEmpty()
 
-            Card(modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
-                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            ApofeozPanel(modifier = Modifier.fillMaxWidth(), accent = true) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
                         "Период: $fromStr..$toStr",
                         style = MaterialTheme.typography.titleSmall,
                     )
-                    Text("Часовой пояс: ${r.timezone}", style = MaterialTheme.typography.bodySmall)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        StatusChip(r.timezone)
+                        StatusChip("Норма ${r.shiftNormHours}ч", accent = true)
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Text("Часы: ${fmt1(r.totals.hours)}", style = MaterialTheme.typography.bodyMedium)
                         Text("Смены: ${fmtShift(r.totals.shiftEquivalent)}", style = MaterialTheme.typography.bodyMedium)
                     }
-                    Text("Норма смены: ${r.shiftNormHours}ч", style = MaterialTheme.typography.bodySmall)
                 }
             }
 
@@ -1083,8 +1102,8 @@ private fun ReportTab() {
                         if (foremanKey.matches(Regex("^[0-9a-fA-F\\-]{36}$"))) "Бригадир: $foremanKey" else "Бригадир: $foremanKey"
                     val sumHours = rows.sumOf { it.hours }
                     val sumShifts = rows.sumOf { it.shiftEquivalent }
-                    Card(modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
-                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    ApofeozPanel(modifier = Modifier.fillMaxWidth(), accent = true) {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(foremanTitle, style = MaterialTheme.typography.titleSmall)
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                                 Text("Часы: ${fmt1(sumHours)}", style = MaterialTheme.typography.bodyMedium)
@@ -1094,8 +1113,8 @@ private fun ReportTab() {
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         rows.forEach { row ->
-                            Card(modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)) {
-                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            ApofeozPanel(modifier = Modifier.fillMaxWidth()) {
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text("${row.lastName} ${row.firstName}", style = MaterialTheme.typography.titleSmall)
                                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                                         Text("Часы: ${fmt1(row.hours)}", style = MaterialTheme.typography.bodyMedium)

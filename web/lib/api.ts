@@ -5,6 +5,7 @@ import type {
   LoginRequest,
   PatchUserRequestDto,
   PatchWorkerRequestDto,
+  RegisterRequest,
   TimesheetReportResponseDto,
   Tokens,
   UserResponseDto,
@@ -94,6 +95,15 @@ async function request<T>(
 
 export async function login(body: LoginRequest): Promise<UserResponseDto> {
   const tokens = await request<Tokens>("/api/v1/auth/login", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  setTokens(tokens);
+  return me();
+}
+
+export async function register(body: RegisterRequest): Promise<UserResponseDto> {
+  const tokens = await request<Tokens>("/api/v1/auth/register", {
     method: "POST",
     body: JSON.stringify(body),
   });

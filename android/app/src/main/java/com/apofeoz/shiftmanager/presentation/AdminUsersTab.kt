@@ -11,8 +11,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -96,7 +94,10 @@ fun AdminUsersTab(currentUserId: String) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text("Пользователи — роли", style = MaterialTheme.typography.titleMedium)
+        SectionHeading(
+            eyebrow = "Доступ и роли",
+            title = "Матрица учётных записей",
+        )
         listError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         OutlinedTextField(
             value = filter,
@@ -105,6 +106,7 @@ fun AdminUsersTab(currentUserId: String) {
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
+        InlineHint("Здесь меняются роли USER / FOREMAN / ADMIN и статус доступа.")
         val q = filter.trim().lowercase()
         val filtered = if (q.isEmpty()) {
             users
@@ -120,22 +122,39 @@ fun AdminUsersTab(currentUserId: String) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(filtered, key = { it.id }) { u ->
-                Card(
+                ApofeozPanel(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { selected = u },
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                 ) {
-                    Column(Modifier.padding(12.dp)) {
-                        Text("${u.firstName} ${u.lastName}", style = MaterialTheme.typography.titleSmall)
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                IdentityBadge("${u.firstName.firstOrNull()?.uppercaseChar() ?: '?'}${u.lastName.firstOrNull()?.uppercaseChar() ?: '?'}")
+                                Column {
+                                    Text("${u.firstName} ${u.lastName}", style = MaterialTheme.typography.titleMedium)
+                                    Text(
+                                        u.email ?: u.phone ?: "—",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                            StatusChip(roleLabel(u.role), accent = u.role == "ADMIN")
+                        }
                         Text(
-                            u.email ?: u.phone ?: "—",
-                            style = MaterialTheme.typography.bodySmall,
+                            u.id,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        Text(
-                            "${roleLabel(u.role)} · ${statusLabel(u.status)} ›",
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            StatusChip(statusLabel(u.status), warning = u.status != "ACTIVE")
+                            StatusChip("Открыть", accent = false)
+                        }
                     }
                 }
             }
@@ -170,38 +189,48 @@ private fun AdminUserDetailScreen(
     var blockConfirm by remember { mutableStateOf(false) }
 
     Column {
-        TopAppBar(
-            title = { Text("${user.firstName} ${user.lastName}") },
-            navigationIcon = {
-                TextButton(onClick = onBack) { Text("← Назад") }
-            },
-        )
         Column(
             Modifier
                 .padding(16.dp)
                 .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            SectionHeading(
+                eyebrow = "Карточка пользователя",
+                title = "${user.firstName} ${user.lastName}",
+                trailing = { TextButton(onClick = onBack) { Text("Назад") } },
+            )
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            Text("Имя: ${user.firstName}")
-            Text("Фамилия: ${user.lastName}")
-            user.email?.let { Text("Email: $it") }
-            user.phone?.let { Text("Телефон: $it") }
-            Text("Статус: ${statusLabel(user.status)}")
+            ApofeozPanel(modifier = Modifier.fillMaxWidth(), accent = true) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        StatusChip(roleLabel(user.role), accent = user.role == "ADMIN")
+                        StatusChip(statusLabel(user.status), warning = user.status != "ACTIVE")
+                    }
+                    Text("Имя: ${user.firstName}")
+                    Text("Фамилия: ${user.lastName}")
+                    user.email?.let { Text("Email: $it") }
+                    user.phone?.let { Text("Телефон: $it") }
+                }
+            }
 
-            Text("Роль", style = MaterialTheme.typography.titleSmall)
-            adminRoles.forEach { r ->
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = !busy) { chosenRole = r },
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    RadioButton(
-                        selected = chosenRole == r,
-                        onClick = { if (!busy) chosenRole = r },
-                    )
-                    Text(r)
+            ApofeozPanel(modifier = Modifier.fillMaxWidth()) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Роль", style = MaterialTheme.typography.titleSmall)
+                    adminRoles.forEach { r ->
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = !busy) { chosenRole = r },
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(
+                                selected = chosenRole == r,
+                                onClick = { if (!busy) chosenRole = r },
+                            )
+                            Text(r)
+                        }
+                    }
                 }
             }
 

@@ -15,6 +15,7 @@
 - Реализованы: Android клиент (`android/`), backend API на Ktor (`backend/`) и базовая web-админка (`web/`).
 - Добавлена инфраструктурная заготовка для prod на Timeweb Cloud: `infra/terraform/` + `infra/deploy/`.
 - Основной бизнес-поток: старт/стоп смен в мобильном клиенте с офлайн-очередью и фоновой синхронизацией.
+- Визуальный baseline проекта теперь задаётся текущей web-админкой: тёмный графитовый интерфейс, золотой акцент, премиальная dashboard-композиция, сильная типографическая иерархия.
 
 ## Backend Contract (Implemented)
 
@@ -44,9 +45,10 @@
 
 ## UI Source of Truth
 
-- Реализация темы/типографики: `android/app/src/main/java/com/apofeoz/shiftmanager/presentation/theme/`.
-- HTML-мокапы референса экранов: `docs/ui-mockups/`.
-- Архивные дизайн-материалы и токены: `docs/ui-reference/`.
+- Основной визуальный источник истины: текущая реализация `web/` и зафиксированные токены в `docs/ui-reference/`.
+- Android тема в `android/app/src/main/java/com/apofeoz/shiftmanager/presentation/theme/` пока функционально актуальна, но визуально должна эволюционировать в сторону web-консоли, а не наоборот.
+- `docs/ui-mockups/` и `docs/MOBILE_UI_MOCKUP.md` считать историческим референсом по структуре экранов, но не по финальному визуальному языку.
+- Для новых UI-задач сначала сверяться с web-админкой, затем с `docs/ui-reference/THEME_TOKENS.md`.
 
 ## Known Gaps / Not Implemented
 

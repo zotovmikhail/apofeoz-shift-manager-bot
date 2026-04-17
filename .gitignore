@@ -65,11 +65,15 @@ infra/terraform/*.tfstate.*
 infra/deploy/.env.prod
 
 # IDE
-.vscode/
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # OS
 .DS_Store
@@ -129,6 +133,7 @@ android/app/debug/
 # Web (Next.js)
 web/node_modules/
 web/.next/
+web/.npm/
 web/out/
 web/.vercel/
 !web/lib/

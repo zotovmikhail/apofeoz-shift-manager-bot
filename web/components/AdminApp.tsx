@@ -9,13 +9,14 @@ import {
   logout,
   patchUser,
   patchWorker,
+  register,
   reportRange,
   timesheet,
   timesheetDownloadUrl,
   users,
   workers,
 } from "../lib/api";
-import type { HoursReportResponseDto, TimesheetReportResponseDto, UserResponseDto, WorkerResponseDto } from "../lib/types";
+import type { HoursReportResponseDto, TimesheetDayCellDto, TimesheetReportResponseDto, UserResponseDto, WorkerResponseDto } from "../lib/types";
 
 type TabKey = "workers" | "users" | "reports" | "profile";
 
@@ -109,12 +110,22 @@ export default function AdminApp() {
 
   if (!user) return <LoginForm onLogin={setUser} />;
   if (user.role !== "ADMIN") {
+    async function forceLogout() {
+      await logout();
+      setUser(null);
+    }
+
     return (
       <main className="shell shellCentered">
         <section className="spotlightPanel narrowPanel">
           <p className="eyebrow">Ограничение доступа</p>
           <h1>Нужна роль ADMIN</h1>
           <p className="mutedText">Эта web-панель доступна только администраторам. Войдите под учётной записью с ролью `ADMIN`.</p>
+          <div className="spotlightActions">
+            <button type="button" className="ghostButton" onClick={() => void forceLogout()}>
+              Выйти
+            </button>
+          </div>
         </section>
       </main>
     );
@@ -132,7 +143,10 @@ export default function AdminApp() {
 }
 
 function LoginForm({ onLogin }: { onLogin: (u: UserResponseDto) => void }) {
+  const [mode, setMode] = useState<"login" | "register">("login");
   const [loginValue, setLoginValue] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -142,13 +156,26 @@ function LoginForm({ onLogin }: { onLogin: (u: UserResponseDto) => void }) {
     setLoading(true);
     setError(null);
     try {
-      const u = await login({ login: loginValue.trim(), password });
+      const trimmedLogin = loginValue.trim();
+      const u = mode === "login"
+        ? await login({ login: trimmedLogin, password })
+        : await register({
+            email: trimmedLogin,
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            password,
+          });
       onLogin(u);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось войти");
+      setError(err instanceof Error ? err.message : mode === "login" ? "Не удалось войти" : "Не удалось зарегистрироваться");
     } finally {
       setLoading(false);
     }
+  }
+
+  function switchMode(nextMode: "login" | "register") {
+    setMode(nextMode);
+    setError(null);
   }
 
   return (
@@ -170,22 +197,65 @@ function LoginForm({ onLogin }: { onLogin: (u: UserResponseDto) => void }) {
 
         <div className="loginCard">
           <div className="cardHeader">
-            <p className="eyebrow">Вход</p>
-            <h2>Защищённый доступ</h2>
+            <div>
+              <p className="eyebrow">{mode === "login" ? "Вход" : "Регистрация"}</p>
+              <h2>{mode === "login" ? "Защищённый доступ" : "Новая учётная запись"}</h2>
+            </div>
+          </div>
+          <div className="authModeToggle" role="tablist" aria-label="Режим авторизации">
+            <button
+              type="button"
+              className={mode === "login" ? "authModeButton active" : "authModeButton"}
+              onClick={() => switchMode("login")}
+            >
+              Вход
+            </button>
+            <button
+              type="button"
+              className={mode === "register" ? "authModeButton active" : "authModeButton"}
+              onClick={() => switchMode("register")}
+            >
+              Регистрация
+            </button>
           </div>
           <form onSubmit={submit} className="stackForm">
+            {mode === "register" && (
+              <>
+                <label className="field">
+                  <span>Имя</span>
+                  <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="имя" required />
+                </label>
+                <label className="field">
+                  <span>Фамилия</span>
+                  <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="фамилия" required />
+                </label>
+              </>
+            )}
             <label className="field">
-              <span>Логин</span>
-              <input value={loginValue} onChange={(e) => setLoginValue(e.target.value)} placeholder="email или телефон" required />
+              <span>{mode === "login" ? "Логин" : "Email"}</span>
+              <input
+                type={mode === "login" ? "text" : "email"}
+                value={loginValue}
+                onChange={(e) => setLoginValue(e.target.value)}
+                placeholder={mode === "login" ? "email или телефон" : "name@company.com"}
+                required
+              />
             </label>
             <label className="field">
               <span>Пароль</span>
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="пароль" required />
             </label>
             <button type="submit" className="primaryButton" disabled={loading}>
-              {loading ? "Входим..." : "Открыть админ-консоль"}
+              {loading
+                ? mode === "login" ? "Входим..." : "Создаём учётную запись..."
+                : mode === "login" ? "Открыть админ-консоль" : "Создать учётную запись"}
             </button>
           </form>
+          <p className="authModeHint">
+            {mode === "login"
+              ? "Если учётной записи ещё нет, создайте её здесь и затем администратор сможет выдать нужную роль."
+              : "После регистрации вы сразу войдёте в систему. Для доступа в web-админку нужна роль ADMIN."}
+          </p>
           {error && <InlineError text={error} />}
         </div>
       </section>
@@ -578,6 +648,7 @@ function ReportsTab({ onError }: { onError: (msg: string | null) => void }) {
   const [to, setTo] = useState("");
   const [data, setData] = useState<HoursReportResponseDto | null>(null);
   const [timesheetData, setTimesheetData] = useState<TimesheetReportResponseDto | null>(null);
+  const [selectedCellKey, setSelectedCellKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -587,12 +658,43 @@ function ReportsTab({ onError }: { onError: (msg: string | null) => void }) {
     setTo(toIsoDate(today));
   }, []);
 
-  const sortedRows = useMemo(() => {
-    return [...(data?.rows ?? [])].sort((a, b) => {
-      if (b.hours !== a.hours) return b.hours - a.hours;
-      return `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`);
-    });
-  }, [data]);
+  const totalWorkers = timesheetData?.workers.length ?? 0;
+  const totalDays = timesheetData?.rows.length ?? 0;
+  const activeCellCount = useMemo(() => {
+    return timesheetData?.rows.reduce((sum, row) => sum + row.cells.filter((cell) => cell.hours > 0).length, 0) ?? 0;
+  }, [timesheetData]);
+  const maxHoursInGrid = useMemo(() => {
+    return timesheetData?.rows.flatMap((row) => row.cells).reduce((max, cell) => Math.max(max, cell.hours), 0) ?? 0;
+  }, [timesheetData]);
+  const selectedCell = useMemo(() => {
+    if (!timesheetData || !selectedCellKey) return null;
+    for (const row of timesheetData.rows) {
+      for (const cell of row.cells) {
+        const key = `${row.date}:${cell.workerId}`;
+        if (key === selectedCellKey) {
+          const worker = timesheetData.workers.find((item) => item.workerId === cell.workerId) ?? null;
+          return { row, cell, worker };
+        }
+      }
+    }
+    return null;
+  }, [timesheetData, selectedCellKey]);
+  const workerTotals = useMemo(() => {
+    if (!timesheetData) return new Map<string, { hours: number; shifts: number }>();
+    const totals = new Map<string, { hours: number; shifts: number }>();
+    for (const worker of timesheetData.workers) {
+      totals.set(worker.workerId, { hours: 0, shifts: 0 });
+    }
+    for (const row of timesheetData.rows) {
+      for (const cell of row.cells) {
+        const current = totals.get(cell.workerId);
+        if (!current) continue;
+        current.hours += cell.hours;
+        current.shifts += cell.shiftEquivalent;
+      }
+    }
+    return totals;
+  }, [timesheetData]);
 
   async function build() {
     if (!from || !to) return;
@@ -605,6 +707,7 @@ function ReportsTab({ onError }: { onError: (msg: string | null) => void }) {
       ]);
       setData(jsonReport);
       setTimesheetData(xlsxTable);
+      setSelectedCellKey(null);
     } catch (e) {
       onError(e instanceof Error ? e.message : "Не удалось построить отчет");
     } finally {
@@ -637,14 +740,18 @@ function ReportsTab({ onError }: { onError: (msg: string | null) => void }) {
       <div className="metricRail">
         <MetricCard label="Дата начала" value={from || "—"} tone="accent" />
         <MetricCard label="Дата конца" value={to || "—"} />
-        <MetricCard label="Строк отчета" value={String(data?.rows.length ?? 0)} />
+        <MetricCard label="Работников" value={String(totalWorkers)} />
+        <MetricCard label="Дней" value={String(totalDays)} />
+        <MetricCard label="Активных ячеек" value={String(activeCellCount)} />
+        <MetricCard label="Всего часов" value={data ? data.totals.hours.toFixed(1) : "—"} tone="accent" />
+        <MetricCard label="Всего смен" value={data ? data.totals.shiftEquivalent.toFixed(3) : "—"} />
       </div>
 
       <section className="contentCard">
         <div className="sectionHeading">
           <div>
             <p className="eyebrow">Построение табеля</p>
-            <h3>Табель по колонкам как в XLS</h3>
+            <h3>Command Center Grid</h3>
           </div>
         </div>
 
@@ -680,107 +787,154 @@ function ReportsTab({ onError }: { onError: (msg: string | null) => void }) {
         {timesheetData && (
           <div className="timesheetWrap">
             <div className="timesheetCaption">
-              <p className="eyebrow">Предпросмотр табеля</p>
+              <p className="eyebrow">Операционная матрица</p>
               <h4>{timesheetData.title}</h4>
               <p className="mutedText">
-                Табель строится отдельным JSON endpoint без парсинга файла. Структура сохранена под будущие правки смен и ручное редактирование.
+                Таблица больше не копирует Excel буквально. Она уже построена как рабочая матрица под будущий edit mode для администратора.
               </p>
             </div>
-            <div className="tableShell reportTableShell timesheetShell">
-              <table className="timesheetTable">
-                <tbody>
-                  <tr>
-                    <td className="timesheetTitleRow" colSpan={3 + timesheetData.workers.length * 2}>
-                      {timesheetData.title}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="timesheetMutedCell" />
-                    <td className="timesheetMutedCell" />
-                    <td className="timesheetHeaderRow">Период</td>
-                    <td className="timesheetHeaderRow" colSpan={timesheetData.workers.length * 2}>
-                      {timesheetData.fromDate} - {timesheetData.toDate} · {timesheetData.timezone}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="timesheetMutedCell" />
-                    <td className="timesheetMutedCell" />
-                    <td className="timesheetHeaderRow">дата</td>
+            <div className="timesheetExecutiveGrid">
+              <div className="timesheetBoard">
+                <div className="timesheetBoardToolbar">
+                  <div className="timesheetBoardMeta">
+                    <span>Период: {timesheetData.fromDate} - {timesheetData.toDate}</span>
+                    <span>Таймзона: {timesheetData.timezone}</span>
+                    <span>Норма смены: {timesheetData.shiftNormHours} ч</span>
+                  </div>
+                  <div className="timesheetBoardLegend">
+                    <span className="legendSwatch low" />
+                    <span>тихо</span>
+                    <span className="legendSwatch mid" />
+                    <span>средняя загрузка</span>
+                    <span className="legendSwatch high" />
+                    <span>плотная смена</span>
+                  </div>
+                </div>
+
+                <div className="timesheetGridShell">
+                  <div
+                    className="timesheetGrid"
+                    style={{ ["--timesheet-cols" as string]: String(timesheetData.workers.length) }}
+                  >
+                    <div className="timesheetGridCorner">
+                      <span className="eyebrow">Дата</span>
+                      <strong>Дневной срез</strong>
+                    </div>
                     {timesheetData.workers.map((worker) => (
-                      <td key={worker.workerId} className="timesheetHeaderRow" colSpan={2}>
-                        {worker.lastName} {worker.firstName}
-                      </td>
+                      <div key={worker.workerId} className="timesheetWorkerHead">
+                        <span>{worker.foremanDisplayName ?? "Без прораба"}</span>
+                        <strong>{worker.lastName} {worker.firstName}</strong>
+                      </div>
                     ))}
-                  </tr>
-                  <tr>
-                    <td className="timesheetMutedCell" />
-                    <td className="timesheetMutedCell" />
-                    <td className="timesheetHeaderRow">смена / часы</td>
-                    {timesheetData.workers.flatMap((worker) => [
-                      <td key={`${worker.workerId}-shift`} className="timesheetHeaderRow">смен</td>,
-                      <td key={`${worker.workerId}-hours`} className="timesheetHeaderRow">час</td>,
+
+                    <div className="timesheetSummaryLabel">
+                      <span className="eyebrow">Итого</span>
+                      <strong>По работнику</strong>
+                    </div>
+                    {timesheetData.workers.map((worker) => {
+                      const totals = workerTotals.get(worker.workerId) ?? { hours: 0, shifts: 0 };
+                      return (
+                        <div key={`${worker.workerId}-summary`} className="timesheetSummaryCell">
+                          <span>{totals.shifts.toFixed(3)} смен</span>
+                          <strong>{totals.hours.toFixed(1)} ч</strong>
+                        </div>
+                      );
+                    })}
+
+                    {timesheetData.rows.flatMap((row) => [
+                      <div key={`${row.date}-label`} className="timesheetDateCol">
+                        <span>{formatReportDate(row.date)}</span>
+                        <strong>{formatWeekday(row.date)}</strong>
+                      </div>,
+                      ...row.cells.map((cell) => {
+                        const key = `${row.date}:${cell.workerId}`;
+                        const worker = timesheetData.workers.find((item) => item.workerId === cell.workerId) ?? null;
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            className={cellClassName(cell, key === selectedCellKey, maxHoursInGrid)}
+                            onClick={() => setSelectedCellKey(key)}
+                            title={worker ? `${worker.lastName} ${worker.firstName}` : cell.workerId}
+                          >
+                            <span className="cellShift">{cell.shiftEquivalent > 0 ? cell.shiftEquivalent.toFixed(3) : "—"}</span>
+                            <span className="cellHours">{cell.hours > 0 ? `${cell.hours.toFixed(1)} ч` : "пусто"}</span>
+                          </button>
+                        );
+                      }),
                     ])}
-                  </tr>
-                  {timesheetData.rows.map((row) => (
-                    <tr key={row.date}>
-                      <td className="timesheetMutedCell" />
-                      <td className="timesheetMutedCell" />
-                      <td className="timesheetMutedCell">{row.date}</td>
-                      {row.cells.flatMap((cell) => [
-                        <td key={`${row.date}-${cell.workerId}-shift`} className={cell.shiftEquivalent > 0 ? "timesheetFilledCell" : ""}>
-                          {cell.shiftEquivalent > 0 ? cell.shiftEquivalent.toFixed(3) : ""}
-                        </td>,
-                        <td key={`${row.date}-${cell.workerId}-hours`} className={cell.hours > 0 ? "timesheetFilledCell" : ""}>
-                          {cell.hours > 0 ? cell.hours.toFixed(1) : ""}
-                        </td>,
-                      ])}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </div>
+                </div>
+              </div>
             </div>
+
+            {selectedCell && selectedCell.worker && (
+              <>
+                <button
+                  type="button"
+                  className="timesheetDrawerBackdrop"
+                  onClick={() => setSelectedCellKey(null)}
+                  aria-label="Закрыть детали ячейки"
+                />
+                <aside className="timesheetDrawer">
+                  <div className="timesheetInspectorCard">
+                    <div className="timesheetDrawerHead">
+                      <div>
+                        <p className="eyebrow">Inspector</p>
+                        <h5>{selectedCell.worker.lastName} {selectedCell.worker.firstName}</h5>
+                      </div>
+                      <button type="button" className="ghostButton" onClick={() => setSelectedCellKey(null)}>
+                        Закрыть
+                      </button>
+                    </div>
+                    <p className="mutedText">{selectedCell.row.date} · {formatWeekday(selectedCell.row.date)}</p>
+                    <div className="inspectorStats">
+                      <div>
+                        <span>Смены</span>
+                        <strong>{selectedCell.cell.shiftEquivalent.toFixed(3)}</strong>
+                      </div>
+                      <div>
+                        <span>Часы</span>
+                        <strong>{selectedCell.cell.hours.toFixed(1)}</strong>
+                      </div>
+                    </div>
+                    <div className="inspectorHints">
+                      <span className="statusPill ok">Источник: JSON endpoint</span>
+                      <span className="statusPill muted">Edit mode: planned</span>
+                    </div>
+                    <p className="mutedText">
+                      Следующий этап: по клику на такую ячейку можно будет открывать реальные смены за день и давать админу точечное редактирование.
+                    </p>
+                  </div>
+                </aside>
+              </>
+            )}
           </div>
         )}
 
-        {data && (
-          <div className="tableShell aggregateTableShell">
-            <table className="dataTable reportTable">
-              <thead>
-                <tr>
-                  <th>Прораб</th>
-                  <th>Работник</th>
-                  <th>Часы</th>
-                  <th>Смены</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedRows.map((r) => (
-                  <tr key={r.workerId}>
-                    <td>{r.foremanDisplayName ?? r.foremanId}</td>
-                    <td>
-                      <div className="tableIdentity">
-                        <strong>{r.lastName} {r.firstName}</strong>
-                        <span>{r.workerId}</span>
-                      </div>
-                    </td>
-                    <td>{r.hours.toFixed(1)}</td>
-                    <td>{r.shiftEquivalent.toFixed(3)}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colSpan={2}><strong>Итого</strong></td>
-                  <td><strong>{data.totals.hours.toFixed(1)}</strong></td>
-                  <td><strong>{data.totals.shiftEquivalent.toFixed(3)}</strong></td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        )}
       </section>
     </section>
   );
+}
+
+function cellClassName(cell: TimesheetDayCellDto, selected: boolean, maxHours: number): string {
+  const parts = ["timesheetCellCard"];
+  if (cell.hours <= 0) parts.push("empty");
+  else if (maxHours > 0 && cell.hours >= maxHours * 0.7) parts.push("dense");
+  else if (maxHours > 0 && cell.hours >= maxHours * 0.35) parts.push("medium");
+  else parts.push("light");
+  if (selected) parts.push("selected");
+  return parts.join(" ");
+}
+
+function formatReportDate(raw: string): string {
+  const date = new Date(`${raw}T00:00:00`);
+  return new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "short" }).format(date);
+}
+
+function formatWeekday(raw: string): string {
+  const date = new Date(`${raw}T00:00:00`);
+  return new Intl.DateTimeFormat("ru-RU", { weekday: "short" }).format(date);
 }
 
 function ProfileTab({ user }: { user: UserResponseDto }) {

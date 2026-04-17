@@ -12,6 +12,14 @@ export type LoginRequest = {
   password: string;
 };
 
+export type RegisterRequest = {
+  email?: string;
+  phone?: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+};
+
 export type UserResponseDto = {
   id: string;
   email: string | null;
