@@ -168,7 +168,12 @@ p {
 .navCard {
   text-align: left;
   display: grid;
-  gap: 4px;
+  grid-template-columns: 44px 1fr;
+  grid-template-areas:
+    "icon label"
+    "icon desc";
+  column-gap: 12px;
+  row-gap: 4px;
   width: 100%;
   padding: 14px 16px;
   border-radius: 18px;
@@ -189,13 +194,44 @@ p {
   border-color: var(--line-strong);
 }
 
+.navIcon {
+  grid-area: icon;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.navCard:hover .navIcon,
+.navCard.active .navIcon {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.22), rgba(212, 175, 55, 0.08));
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
+}
+
+.navIcon svg {
+  width: 20px;
+  height: 20px;
+  stroke: var(--accent);
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .navLabel {
+  grid-area: label;
   font-family: "Space Grotesk", "Inter", sans-serif;
   font-size: 1rem;
 }
 
 .navDescription,
 .userChip p {
+  grid-area: desc;
   color: var(--muted);
   font-size: 0.84rem;
 }
@@ -457,6 +493,10 @@ button:disabled {
   border-color: var(--line-strong);
 }
 
+.aggregateTableShell {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
 .dataTable {
   width: 100%;
   min-width: 860px;
@@ -488,6 +528,77 @@ button:disabled {
   border-top: 1px solid var(--line-strong);
   border-bottom: none;
   background: rgba(212, 175, 55, 0.06);
+}
+
+.timesheetWrap {
+  display: grid;
+  gap: 14px;
+}
+
+.timesheetCaption {
+  display: grid;
+  gap: 8px;
+}
+
+.timesheetCaption h4 {
+  margin: 0;
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  font-size: 1.2rem;
+}
+
+.timesheetShell {
+  background: rgba(11, 11, 11, 0.88);
+}
+
+.timesheetTable {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  color: var(--text);
+  font-size: 0.82rem;
+}
+
+.timesheetTable td {
+  min-width: 72px;
+  padding: 10px 8px;
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  white-space: nowrap;
+  text-align: center;
+}
+
+.timesheetTable tr td:nth-child(1),
+.timesheetTable tr td:nth-child(2) {
+  min-width: 34px;
+}
+
+.timesheetTable tr td:nth-child(3) {
+  min-width: 122px;
+  text-align: left;
+}
+
+.timesheetTitleRow {
+  font-family: "Space Grotesk", "Inter", sans-serif;
+  font-size: 0.88rem;
+  color: var(--accent-strong);
+  background: rgba(212, 175, 55, 0.08);
+}
+
+.timesheetHeaderRow {
+  color: var(--accent);
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.timesheetFilledCell {
+  color: #ffe7a0;
+  background: rgba(212, 175, 55, 0.14);
+  font-weight: 700;
+}
+
+.timesheetMutedCell {
+  color: var(--muted);
 }
 
 .tableIdentity {
@@ -627,6 +738,10 @@ button:disabled {
   .heroPanel,
   .loginHero {
     grid-template-columns: 1fr;
+  }
+
+  .navCard {
+    grid-template-columns: 40px 1fr;
   }
 }
 

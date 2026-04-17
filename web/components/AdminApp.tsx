@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import * as XLSX from "xlsx";
 import {
   authHeader,
   bootstrapSession,
@@ -24,30 +25,55 @@ type SummaryMetric = {
   tone?: "accent" | "neutral";
 };
 
-const TAB_META: Record<TabKey, { label: string; eyebrow: string; title: string; description: string }> = {
+type TimesheetCell = {
+  value: string;
+  tone?: "filled" | "muted";
+};
+
+type TimesheetTable = {
+  title: string;
+  rows: TimesheetCell[][];
+};
+
+const TAB_ORDER: TabKey[] = ["workers", "users", "reports", "profile"];
+
+const TAB_META: Record<
+  TabKey,
+  {
+    label: string;
+    eyebrow: string;
+    title: string;
+    description: string;
+    icon: ReactNode;
+  }
+> = {
   workers: {
-    label: "Workers",
-    eyebrow: "Field structure",
-    title: "Workers and brigades",
-    description: "Manage worker cards, keep foreman assignments clean, and update team availability without leaving the panel.",
+    label: "Рабочие",
+    eyebrow: "Состав бригад",
+    title: "Карточки рабочих и назначение по прорабам",
+    description: "Создавайте карточки, быстро переназначайте рабочих и держите фактический состав бригад в одном экране.",
+    icon: <GridIcon />,
   },
   users: {
-    label: "Users",
-    eyebrow: "Access control",
-    title: "Roles and account states",
-    description: "Control who becomes FOREMAN or ADMIN, and lock accounts with clear server feedback when backend rules block the change.",
+    label: "Пользователи",
+    eyebrow: "Доступ и роли",
+    title: "Роли, статусы и административный контроль",
+    description: "Меняйте роли USER / FOREMAN / ADMIN, блокируйте доступ и сразу видьте текущую структуру аккаунтов.",
+    icon: <UsersIcon />,
   },
   reports: {
-    label: "Reports",
-    eyebrow: "Shift analytics",
-    title: "Operational report matrix",
-    description: "Review hours, shift equivalents and downloadable timesheet exports in a browser view that mirrors the XLSX logic.",
+    label: "Отчёты",
+    eyebrow: "Табель и аналитика",
+    title: "Табельная матрица по диапазону дат",
+    description: "Формируйте тот же табель, что уходит в XLSX, и просматривайте его прямо в браузере по колонкам и датам.",
+    icon: <ReportIcon />,
   },
   profile: {
-    label: "Profile",
-    eyebrow: "Session",
-    title: "Current admin session",
-    description: "Check the current account, confirm role context, and end the session explicitly.",
+    label: "Профиль",
+    eyebrow: "Текущая сессия",
+    title: "Профиль администратора и контекст входа",
+    description: "Проверьте, под какой учётной записью открыт web-console, и завершите сессию вручную в один клик.",
+    icon: <ShieldIcon />,
   },
 };
 
@@ -66,7 +92,7 @@ export default function AdminApp() {
         if (!cancelled) setUser(me);
       } catch (e) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Session bootstrap error");
+          setError(e instanceof Error ? e.message : "Не удалось восстановить сессию");
         }
       } finally {
         if (!cancelled) setBusy(false);
@@ -83,9 +109,9 @@ export default function AdminApp() {
     return (
       <main className="shell shellCentered">
         <section className="spotlightPanel skeletonPanel">
-          <p className="eyebrow">Boot sequence</p>
-          <h1>Loading admin workspace</h1>
-          <p className="mutedText">Refreshing session and preparing live data channels.</p>
+          <p className="eyebrow">Запуск панели</p>
+          <h1>Подготавливаем рабочее место администратора</h1>
+          <p className="mutedText">Проверяем токены, восстанавливаем сессию и подключаем рабочие данные.</p>
         </section>
       </main>
     );
@@ -96,9 +122,9 @@ export default function AdminApp() {
     return (
       <main className="shell shellCentered">
         <section className="spotlightPanel narrowPanel">
-          <p className="eyebrow">Access boundary</p>
-          <h1>ADMIN role required</h1>
-          <p className="mutedText">This panel is reserved for administrators. Log in with an account that has role `ADMIN`.</p>
+          <p className="eyebrow">Ограничение доступа</p>
+          <h1>Нужна роль ADMIN</h1>
+          <p className="mutedText">Эта web-панель доступна только администраторам. Войдите под учётной записью с ролью `ADMIN`.</p>
         </section>
       </main>
     );
@@ -129,7 +155,7 @@ function LoginForm({ onLogin }: { onLogin: (u: UserResponseDto) => void }) {
       const u = await login({ login: loginValue.trim(), password });
       onLogin(u);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      setError(err instanceof Error ? err.message : "Не удалось войти");
     } finally {
       setLoading(false);
     }
@@ -140,34 +166,34 @@ function LoginForm({ onLogin }: { onLogin: (u: UserResponseDto) => void }) {
       <section className="loginHero">
         <div className="loginBrand">
           <span className="brandBadge">Apofeoz</span>
-          <p className="eyebrow">Admin web console</p>
-          <h1>Command the shift floor from one screen.</h1>
+          <p className="eyebrow">Web-админка</p>
+          <h1>Единый центр управления сменами и табелем.</h1>
           <p className="mutedText">
-            Dark graphite surfaces, gold signal accents, and the same operational backbone as the mobile admin experience.
+            Темный графит, золотые сигналы и та же бизнес-логика, что уже работает в мобильной админке и backend API.
           </p>
           <div className="metricRail">
-            <MetricCard label="Domain" value="Admin control" tone="accent" />
-            <MetricCard label="Auth" value="JWT + refresh" />
-            <MetricCard label="Reports" value="Live + XLSX" />
+            <MetricCard label="Контур" value="Админ-панель" tone="accent" />
+            <MetricCard label="Авторизация" value="JWT + refresh" />
+            <MetricCard label="Табель" value="Live + XLSX" />
           </div>
         </div>
 
         <div className="loginCard">
           <div className="cardHeader">
-            <p className="eyebrow">Sign in</p>
-            <h2>Secure admin entry</h2>
+            <p className="eyebrow">Вход</p>
+            <h2>Защищённый доступ</h2>
           </div>
           <form onSubmit={submit} className="stackForm">
             <label className="field">
-              <span>Login</span>
-              <input value={loginValue} onChange={(e) => setLoginValue(e.target.value)} placeholder="email or phone" required />
+              <span>Логин</span>
+              <input value={loginValue} onChange={(e) => setLoginValue(e.target.value)} placeholder="email или телефон" required />
             </label>
             <label className="field">
-              <span>Password</span>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password" required />
+              <span>Пароль</span>
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="пароль" required />
             </label>
             <button type="submit" className="primaryButton" disabled={loading}>
-              {loading ? "Signing in..." : "Enter admin console"}
+              {loading ? "Входим..." : "Открыть админ-консоль"}
             </button>
           </form>
           {error && <InlineError text={error} />}
@@ -205,8 +231,8 @@ function AdminPanel({
           <div className="sidebarTop">
             <span className="brandBadge">Apofeoz</span>
             <div>
-              <p className="eyebrow">Admin session</p>
-              <h1 className="sidebarTitle">Control deck</h1>
+              <p className="eyebrow">Админ-сессия</p>
+              <h1 className="sidebarTitle">Пульт управления</h1>
             </div>
             <p className="mutedText">
               {user.firstName} {user.lastName}
@@ -214,27 +240,31 @@ function AdminPanel({
           </div>
 
           <nav className="sidebarNav">
-            {Object.entries(TAB_META).map(([key, meta]) => (
-              <button
-                key={key}
-                className={tab === key ? "navCard active" : "navCard"}
-                onClick={() => setTab(key as TabKey)}
-              >
-                <span className="navLabel">{meta.label}</span>
-                <span className="navDescription">{meta.eyebrow}</span>
-              </button>
-            ))}
+            {TAB_ORDER.map((key) => {
+              const meta = TAB_META[key];
+              return (
+                <button
+                  key={key}
+                  className={tab === key ? "navCard active" : "navCard"}
+                  onClick={() => setTab(key)}
+                >
+                  <span className="navIcon">{meta.icon}</span>
+                  <span className="navLabel">{meta.label}</span>
+                  <span className="navDescription">{meta.eyebrow}</span>
+                </button>
+              );
+            })}
           </nav>
 
           <div className="sidebarFooter">
             <div className="userChip">
               <span className="userInitials">{initials(user)}</span>
               <div>
-                <strong>{user.role}</strong>
-                <p>{user.status}</p>
+                <strong>{roleTitle(user.role)}</strong>
+                <p>{statusTitle(user.status)}</p>
               </div>
             </div>
-            <button className="ghostButton" onClick={doLogout}>Logout</button>
+            <button className="ghostButton" onClick={doLogout}>Выйти</button>
           </div>
         </aside>
 
@@ -246,19 +276,19 @@ function AdminPanel({
               <p className="mutedText">{tabInfo.description}</p>
             </div>
             <div className="heroMetrics">
-              <MetricCard label="Operator" value={`${user.firstName} ${user.lastName}`} />
-              <MetricCard label="Role" value={user.role} tone="accent" />
-              <MetricCard label="State" value={user.status} />
+              <MetricCard label="Оператор" value={`${user.firstName} ${user.lastName}`} />
+              <MetricCard label="Роль" value={roleTitle(user.role)} tone="accent" />
+              <MetricCard label="Состояние" value={statusTitle(user.status)} />
             </div>
           </header>
 
           {globalError && (
             <div className="noticeCard danger">
               <div>
-                <strong>Request error</strong>
+                <strong>Ошибка запроса</strong>
                 <p>{globalError}</p>
               </div>
-              <button className="ghostButton" onClick={clearError}>Dismiss</button>
+              <button className="ghostButton" onClick={clearError}>Закрыть</button>
             </div>
           )}
 
@@ -296,7 +326,7 @@ function WorkersTab({ onError }: { onError: (msg: string | null) => void }) {
         setForemanId(activeForemen[0].id);
       }
     } catch (e) {
-      onError(e instanceof Error ? e.message : "Failed to load workers");
+      onError(e instanceof Error ? e.message : "Не удалось загрузить список рабочих");
     } finally {
       setLoading(false);
     }
@@ -321,7 +351,7 @@ function WorkersTab({ onError }: { onError: (msg: string | null) => void }) {
       setPosition("");
       await load();
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Create worker failed");
+      onError(err instanceof Error ? err.message : "Не удалось создать карточку рабочего");
     }
   }
 
@@ -331,7 +361,7 @@ function WorkersTab({ onError }: { onError: (msg: string | null) => void }) {
       await patchWorker(row.id, { status: row.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" });
       await load();
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Patch worker failed");
+      onError(err instanceof Error ? err.message : "Не удалось изменить статус рабочего");
     }
   }
 
@@ -341,46 +371,46 @@ function WorkersTab({ onError }: { onError: (msg: string | null) => void }) {
       await patchWorker(workerId, { foremanId: nextForemanId });
       await load();
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Reassign failed");
+      onError(err instanceof Error ? err.message : "Не удалось переназначить рабочего");
     }
   }
 
   return (
     <section className="contentStack">
       <div className="metricRail">
-        <MetricCard label="Workers total" value={String(items.length)} tone="accent" />
-        <MetricCard label="Active now" value={String(activeCount)} />
-        <MetricCard label="Foremen online" value={String(foremen.length)} />
+        <MetricCard label="Всего рабочих" value={String(items.length)} tone="accent" />
+        <MetricCard label="Активных" value={String(activeCount)} />
+        <MetricCard label="Активных прорабов" value={String(foremen.length)} />
       </div>
 
       <section className="contentCard">
         <div className="sectionHeading">
           <div>
-            <p className="eyebrow">Create card</p>
-            <h3>Add worker</h3>
+            <p className="eyebrow">Новая карточка</p>
+            <h3>Добавить рабочего</h3>
           </div>
           <button className="ghostButton" onClick={() => void load()} disabled={loading}>
-            {loading ? "Refreshing..." : "Refresh data"}
+            {loading ? "Обновляем..." : "Обновить данные"}
           </button>
         </div>
 
         <form onSubmit={submitCreate} className="formGrid">
           <label className="field">
-            <span>First name</span>
+            <span>Имя</span>
             <input value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
           </label>
           <label className="field">
-            <span>Last name</span>
+            <span>Фамилия</span>
             <input value={lastName} onChange={(e) => setLastName(e.target.value)} required />
           </label>
           <label className="field">
-            <span>Position</span>
-            <input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="optional" />
+            <span>Должность</span>
+            <input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="необязательно" />
           </label>
           <label className="field">
-            <span>Foreman</span>
+            <span>Прораб</span>
             <select value={foremanId} onChange={(e) => setForemanId(e.target.value)} required>
-              <option value="" disabled>Select foreman</option>
+              <option value="" disabled>Выберите прораба</option>
               {foremen.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.firstName} {f.lastName}
@@ -388,26 +418,26 @@ function WorkersTab({ onError }: { onError: (msg: string | null) => void }) {
               ))}
             </select>
           </label>
-          <button type="submit" className="primaryButton">Create worker</button>
+          <button type="submit" className="primaryButton">Создать рабочего</button>
         </form>
       </section>
 
       <section className="contentCard">
         <div className="sectionHeading">
           <div>
-            <p className="eyebrow">Registry</p>
-            <h3>Assigned workforce</h3>
+            <p className="eyebrow">Список</p>
+            <h3>Текущий состав</h3>
           </div>
         </div>
         <div className="tableShell">
           <table className="dataTable">
             <thead>
               <tr>
-                <th>Worker</th>
-                <th>Position</th>
-                <th>Status</th>
-                <th>Foreman</th>
-                <th>Action</th>
+                <th>Рабочий</th>
+                <th>Должность</th>
+                <th>Статус</th>
+                <th>Прораб</th>
+                <th>Действие</th>
               </tr>
             </thead>
             <tbody>
@@ -416,12 +446,12 @@ function WorkersTab({ onError }: { onError: (msg: string | null) => void }) {
                   <td>
                     <div className="tableIdentity">
                       <strong>{w.lastName} {w.firstName}</strong>
-                      <span>{w.userId ? "Linked to account" : "Standalone worker card"}</span>
+                      <span>{w.userId ? "Связан с учётной записью" : "Отдельная карточка рабочего"}</span>
                     </div>
                   </td>
                   <td>{w.position ?? "—"}</td>
                   <td>
-                    <StatusPill tone={w.status === "ACTIVE" ? "ok" : "muted"}>{w.status}</StatusPill>
+                    <StatusPill tone={w.status === "ACTIVE" ? "ok" : "muted"}>{statusTitle(w.status)}</StatusPill>
                   </td>
                   <td>
                     <select value={w.foremanId} onChange={(e) => void reassign(w.id, e.target.value)}>
@@ -434,7 +464,7 @@ function WorkersTab({ onError }: { onError: (msg: string | null) => void }) {
                   </td>
                   <td>
                     <button className="ghostButton" onClick={() => void toggleStatus(w)}>
-                      {w.status === "ACTIVE" ? "Deactivate" : "Activate"}
+                      {w.status === "ACTIVE" ? "Деактивировать" : "Активировать"}
                     </button>
                   </td>
                 </tr>
@@ -459,7 +489,7 @@ function UsersTab({ onError }: { onError: (msg: string | null) => void }) {
     try {
       setItems(await users());
     } catch (e) {
-      onError(e instanceof Error ? e.message : "Failed to load users");
+      onError(e instanceof Error ? e.message : "Не удалось загрузить пользователей");
     } finally {
       setLoading(false);
     }
@@ -475,7 +505,7 @@ function UsersTab({ onError }: { onError: (msg: string | null) => void }) {
       await patchUser(id, { role });
       await load();
     } catch (e) {
-      onError(e instanceof Error ? e.message : "Patch user role failed");
+      onError(e instanceof Error ? e.message : "Не удалось изменить роль пользователя");
     }
   }
 
@@ -485,36 +515,36 @@ function UsersTab({ onError }: { onError: (msg: string | null) => void }) {
       await patchUser(id, { status });
       await load();
     } catch (e) {
-      onError(e instanceof Error ? e.message : "Patch user status failed");
+      onError(e instanceof Error ? e.message : "Не удалось изменить статус пользователя");
     }
   }
 
   return (
     <section className="contentStack">
       <div className="metricRail">
-        <MetricCard label="Users total" value={String(items.length)} tone="accent" />
-        <MetricCard label="Active admins" value={String(adminsCount)} />
-        <MetricCard label="Foremen" value={String(items.filter((item) => item.role === "FOREMAN").length)} />
+        <MetricCard label="Всего пользователей" value={String(items.length)} tone="accent" />
+        <MetricCard label="Активных админов" value={String(adminsCount)} />
+        <MetricCard label="Прорабов" value={String(items.filter((item) => item.role === "FOREMAN").length)} />
       </div>
 
       <section className="contentCard">
         <div className="sectionHeading">
           <div>
-            <p className="eyebrow">Access matrix</p>
-            <h3>Roles and account states</h3>
+            <p className="eyebrow">Матрица доступа</p>
+            <h3>Роли и статусы учётных записей</h3>
           </div>
           <button className="ghostButton" onClick={() => void load()} disabled={loading}>
-            {loading ? "Refreshing..." : "Refresh data"}
+            {loading ? "Обновляем..." : "Обновить данные"}
           </button>
         </div>
         <div className="tableShell">
           <table className="dataTable">
             <thead>
               <tr>
-                <th>User</th>
-                <th>Contact</th>
-                <th>Role</th>
-                <th>Status</th>
+                <th>Пользователь</th>
+                <th>Контакт</th>
+                <th>Роль</th>
+                <th>Статус</th>
               </tr>
             </thead>
             <tbody>
@@ -536,7 +566,7 @@ function UsersTab({ onError }: { onError: (msg: string | null) => void }) {
                   </td>
                   <td>
                     <div className="statusControl">
-                      <StatusPill tone={u.status === "ACTIVE" ? "ok" : "muted"}>{u.status}</StatusPill>
+                      <StatusPill tone={u.status === "ACTIVE" ? "ok" : "muted"}>{statusTitle(u.status)}</StatusPill>
                       <select value={u.status} onChange={(e) => void updateStatus(u.id, e.target.value as UserResponseDto["status"])}>
                         <option value="ACTIVE">ACTIVE</option>
                         <option value="INACTIVE">INACTIVE</option>
@@ -557,6 +587,7 @@ function ReportsTab({ onError }: { onError: (msg: string | null) => void }) {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [data, setData] = useState<HoursReportResponseDto | null>(null);
+  const [timesheet, setTimesheet] = useState<TimesheetTable | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -578,9 +609,14 @@ function ReportsTab({ onError }: { onError: (msg: string | null) => void }) {
     setLoading(true);
     onError(null);
     try {
-      setData(await reportRange(from, to));
+      const [jsonReport, xlsxTable] = await Promise.all([
+        reportRange(from, to),
+        loadTimesheetPreview(from, to),
+      ]);
+      setData(jsonReport);
+      setTimesheet(xlsxTable);
     } catch (e) {
-      onError(e instanceof Error ? e.message : "Failed to build report");
+      onError(e instanceof Error ? e.message : "Не удалось построить отчет");
     } finally {
       setLoading(false);
     }
@@ -602,86 +638,127 @@ function ReportsTab({ onError }: { onError: (msg: string | null) => void }) {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      onError(e instanceof Error ? e.message : "XLSX download failed");
+      onError(e instanceof Error ? e.message : "Не удалось скачать XLSX");
     }
   }
 
   return (
     <section className="contentStack">
       <div className="metricRail">
-        <MetricCard label="Range start" value={from || "—"} tone="accent" />
-        <MetricCard label="Range end" value={to || "—"} />
-        <MetricCard label="Rows loaded" value={String(data?.rows.length ?? 0)} />
+        <MetricCard label="Дата начала" value={from || "—"} tone="accent" />
+        <MetricCard label="Дата конца" value={to || "—"} />
+        <MetricCard label="Строк отчета" value={String(data?.rows.length ?? 0)} />
       </div>
 
       <section className="contentCard">
         <div className="sectionHeading">
           <div>
-            <p className="eyebrow">Report builder</p>
-            <h3>Interactive shift matrix</h3>
+            <p className="eyebrow">Построение табеля</p>
+            <h3>Табель по колонкам как в XLS</h3>
           </div>
         </div>
 
         <div className="formGrid reportControls">
           <label className="field">
-            <span>From</span>
+            <span>С</span>
             <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
           </label>
           <label className="field">
-            <span>To</span>
+            <span>По</span>
             <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
           </label>
           <button className="primaryButton" onClick={() => void build()} disabled={loading || !from || !to}>
-            {loading ? "Building..." : "Build report"}
+            {loading ? "Строим..." : "Построить отчет"}
           </button>
           <button className="ghostButton" onClick={() => void downloadXlsx()} disabled={!from || !to}>
-            Download XLSX
+            Скачать XLSX
           </button>
         </div>
 
         {data && (
-          <>
-            <div className="noticeCard">
-              <div>
-                <strong>{data.fromDate ?? from} — {data.toDate ?? to}</strong>
-                <p>Timezone {data.timezone} · Shift norm {data.shiftNormHours}h · Totals {data.totals.hours.toFixed(1)}h / {data.totals.shiftEquivalent.toFixed(3)}</p>
-              </div>
+          <div className="noticeCard">
+            <div>
+              <strong>{data.fromDate ?? from} — {data.toDate ?? to}</strong>
+              <p>
+                Таймзона {data.timezone} · Норма смены {data.shiftNormHours} ч · Итого {data.totals.hours.toFixed(1)} ч /{" "}
+                {data.totals.shiftEquivalent.toFixed(3)} смен
+              </p>
             </div>
-            <div className="tableShell reportTableShell">
-              <table className="dataTable reportTable">
-                <thead>
-                  <tr>
-                    <th>Foreman</th>
-                    <th>Worker</th>
-                    <th>Hours</th>
-                    <th>Shift eq</th>
-                  </tr>
-                </thead>
+          </div>
+        )}
+
+        {timesheet && (
+          <div className="timesheetWrap">
+            <div className="timesheetCaption">
+              <p className="eyebrow">Предпросмотр табеля</p>
+              <h4>{timesheet.title}</h4>
+              <p className="mutedText">
+                Колонки A–B сохранены пустыми, C — даты, дальше по две колонки на каждого работника: доля смены и резерв.
+              </p>
+            </div>
+            <div className="tableShell reportTableShell timesheetShell">
+              <table className="timesheetTable">
                 <tbody>
-                  {sortedRows.map((r) => (
-                    <tr key={r.workerId}>
-                      <td>{r.foremanDisplayName ?? r.foremanId}</td>
-                      <td>
-                        <div className="tableIdentity">
-                          <strong>{r.lastName} {r.firstName}</strong>
-                          <span>{r.workerId}</span>
-                        </div>
-                      </td>
-                      <td>{r.hours.toFixed(1)}</td>
-                      <td>{r.shiftEquivalent.toFixed(3)}</td>
+                  {timesheet.rows.map((row, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {row.map((cell, cellIndex) => (
+                        <td
+                          key={`${rowIndex}-${cellIndex}`}
+                          className={[
+                            rowIndex === 0 ? "timesheetTitleRow" : "",
+                            rowIndex === 2 || rowIndex === 3 ? "timesheetHeaderRow" : "",
+                            cell.tone === "filled" ? "timesheetFilledCell" : "",
+                            cell.tone === "muted" ? "timesheetMutedCell" : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                        >
+                          {cell.value}
+                        </td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>
-                <tfoot>
-                  <tr>
-                    <td colSpan={2}><strong>Total</strong></td>
-                    <td><strong>{data.totals.hours.toFixed(1)}</strong></td>
-                    <td><strong>{data.totals.shiftEquivalent.toFixed(3)}</strong></td>
-                  </tr>
-                </tfoot>
               </table>
             </div>
-          </>
+          </div>
+        )}
+
+        {data && (
+          <div className="tableShell aggregateTableShell">
+            <table className="dataTable reportTable">
+              <thead>
+                <tr>
+                  <th>Прораб</th>
+                  <th>Работник</th>
+                  <th>Часы</th>
+                  <th>Смены</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedRows.map((r) => (
+                  <tr key={r.workerId}>
+                    <td>{r.foremanDisplayName ?? r.foremanId}</td>
+                    <td>
+                      <div className="tableIdentity">
+                        <strong>{r.lastName} {r.firstName}</strong>
+                        <span>{r.workerId}</span>
+                      </div>
+                    </td>
+                    <td>{r.hours.toFixed(1)}</td>
+                    <td>{r.shiftEquivalent.toFixed(3)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan={2}><strong>Итого</strong></td>
+                  <td><strong>{data.totals.hours.toFixed(1)}</strong></td>
+                  <td><strong>{data.totals.shiftEquivalent.toFixed(3)}</strong></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         )}
       </section>
     </section>
@@ -690,9 +767,9 @@ function ReportsTab({ onError }: { onError: (msg: string | null) => void }) {
 
 function ProfileTab({ user }: { user: UserResponseDto }) {
   const metrics: SummaryMetric[] = [
-    { label: "Role", value: user.role, tone: "accent" },
-    { label: "Status", value: user.status },
-    { label: "Identity", value: user.email ?? user.phone ?? "No contact" },
+    { label: "Роль", value: roleTitle(user.role), tone: "accent" },
+    { label: "Статус", value: statusTitle(user.status) },
+    { label: "Контакт", value: user.email ?? user.phone ?? "Нет контакта" },
   ];
 
   return (
@@ -707,18 +784,20 @@ function ProfileTab({ user }: { user: UserResponseDto }) {
         <div className="profileHero">
           <div className="profileSeal">{initials(user)}</div>
           <div>
-            <p className="eyebrow">Current operator</p>
+            <p className="eyebrow">Текущий оператор</p>
             <h3>{user.firstName} {user.lastName}</h3>
-            <p className="mutedText">Use this block to confirm which privileged account is currently operating the web admin panel.</p>
+            <p className="mutedText">
+              Здесь видно, какая именно админская учётная запись сейчас работает в web-консоли.
+            </p>
           </div>
         </div>
 
         <div className="profileGrid">
-          <ProfileField label="User ID" value={user.id} />
+          <ProfileField label="ID пользователя" value={user.id} />
           <ProfileField label="Email" value={user.email ?? "—"} />
-          <ProfileField label="Phone" value={user.phone ?? "—"} />
-          <ProfileField label="Role" value={user.role} />
-          <ProfileField label="Status" value={user.status} />
+          <ProfileField label="Телефон" value={user.phone ?? "—"} />
+          <ProfileField label="Роль" value={roleTitle(user.role)} />
+          <ProfileField label="Статус" value={statusTitle(user.status)} />
         </div>
       </section>
     </section>
@@ -751,11 +830,89 @@ function InlineError({ text }: { text: string }) {
   return (
     <div className="noticeCard danger compact">
       <div>
-        <strong>Error</strong>
+        <strong>Ошибка</strong>
         <p>{text}</p>
       </div>
     </div>
   );
+}
+
+function GridIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="3" y="3" width="7" height="7" rx="2" />
+      <rect x="14" y="3" width="7" height="7" rx="2" />
+      <rect x="3" y="14" width="7" height="7" rx="2" />
+      <rect x="14" y="14" width="7" height="7" rx="2" />
+    </svg>
+  );
+}
+
+function UsersIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7.5 12a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
+      <path d="M16.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+      <path d="M3.5 19.5c0-2.5 2.3-4.5 5-4.5s5 2 5 4.5v1h-10v-1Z" />
+      <path d="M14 20.5v-1c0-1.4-.5-2.6-1.3-3.6.6-.3 1.3-.4 2-.4 2.1 0 3.8 1.5 3.8 3.5v1.5H14Z" />
+    </svg>
+  );
+}
+
+function ReportIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6 3h8l4 4v14H6V3Z" />
+      <path d="M14 3v5h5" />
+      <path d="M9 12h6" />
+      <path d="M9 16h6" />
+    </svg>
+  );
+}
+
+function ShieldIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 3 5 6v5c0 5 3.2 8.8 7 10 3.8-1.2 7-5 7-10V6l-7-3Z" />
+      <path d="M9.5 12.5 11 14l3.5-3.5" />
+    </svg>
+  );
+}
+
+async function loadTimesheetPreview(from: string, to: string): Promise<TimesheetTable> {
+  const res = await fetch(timesheetDownloadUrl(from, to), {
+    headers: authHeader(),
+  });
+  if (!res.ok) {
+    throw new Error(`Не удалось загрузить XLSX: HTTP ${res.status}`);
+  }
+
+  const buf = await res.arrayBuffer();
+  const workbook = XLSX.read(buf, { type: "array", cellDates: true });
+  const sheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetName];
+  const raw = XLSX.utils.sheet_to_json<(string | number | Date | null)[]>(sheet, {
+    header: 1,
+    raw: false,
+    blankrows: false,
+  });
+
+  const rows = raw.map((row, rowIndex) =>
+    (row as (string | number | Date | null)[]).map((cell, cellIndex) => {
+      const value = cell == null ? "" : String(cell);
+      const filled = rowIndex >= 4 && cellIndex >= 3 && value.trim() !== "";
+      const muted = rowIndex >= 4 && cellIndex <= 2;
+      return {
+        value,
+        tone: filled ? "filled" : muted ? "muted" : undefined,
+      } satisfies TimesheetCell;
+    }),
+  );
+
+  return {
+    title: rows[0]?.[2]?.value || "Табель",
+    rows,
+  };
 }
 
 function toIsoDate(d: Date): string {
@@ -764,5 +921,20 @@ function toIsoDate(d: Date): string {
 
 function initials(user: UserResponseDto): string {
   return `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase() || "AD";
+}
+
+function roleTitle(role: UserResponseDto["role"]): string {
+  switch (role) {
+    case "ADMIN":
+      return "Администратор";
+    case "FOREMAN":
+      return "Прораб";
+    default:
+      return "Пользователь";
+  }
+}
+
+function statusTitle(status: "ACTIVE" | "INACTIVE"): string {
+  return status === "ACTIVE" ? "Активен" : "Неактивен";
 }
 
