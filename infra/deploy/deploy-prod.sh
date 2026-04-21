@@ -25,10 +25,19 @@ if [[ ! -d "$APP_ROOT/backend" ]]; then
   exit 1
 fi
 
+if [[ ! -d "$APP_ROOT/web" ]]; then
+  echo "ERROR: missing web sources in $APP_ROOT/web"
+  echo "Clone repository into $APP_ROOT before deploy."
+  exit 1
+fi
+
 mkdir -p "$SCRIPTS_ROOT"
 
 echo "==> docker compose pull (base images)"
 docker compose -p "$STACK_NAME" -f "$COMPOSE_FILE" --env-file "$ENV_FILE" pull || true
+
+echo "==> validating docker compose config"
+docker compose -p "$STACK_NAME" -f "$COMPOSE_FILE" --env-file "$ENV_FILE" config >/dev/null
 
 echo "==> docker compose up -d --build"
 docker compose -p "$STACK_NAME" -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build

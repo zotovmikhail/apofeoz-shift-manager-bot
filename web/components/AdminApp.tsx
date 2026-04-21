@@ -2,9 +2,9 @@
 
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import {
-  authHeader,
   bootstrapSession,
   createWorker,
+  downloadTimesheetXlsx,
   login,
   logout,
   patchUser,
@@ -12,7 +12,6 @@ import {
   register,
   reportRange,
   timesheet,
-  timesheetDownloadUrl,
   users,
   workers,
 } from "../lib/api";
@@ -719,11 +718,7 @@ function ReportsTab({ onError }: { onError: (msg: string | null) => void }) {
     if (!from || !to) return;
     onError(null);
     try {
-      const res = await fetch(timesheetDownloadUrl(from, to), {
-        headers: authHeader(),
-      });
-      if (!res.ok) throw new Error(`XLSX download failed: HTTP ${res.status}`);
-      const blob = await res.blob();
+      const blob = await downloadTimesheetXlsx(from, to);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

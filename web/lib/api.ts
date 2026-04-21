@@ -93,6 +93,46 @@ async function request<T>(
   return (await res.json()) as T;
 }
 
+async function requestRaw(
+  path: string,
+  init: RequestInit = {},
+  retry401 = true,
+): Promise<Response> {
+  const headers = new Headers(init.headers);
+  if (!headers.has("Content-Type") && init.body) {
+    headers.set("Content-Type", "application/json");
+  }
+  if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+
+  const res = await fetch(`${apiBase()}${path}`, { ...init, headers });
+  if (res.status === 401 && retry401) {
+    const ok = await refreshAccess();
+    if (ok) return requestRaw(path, init, false);
+  }
+
+  if (!res.ok) {
+    let errMessage = `HTTP ${res.status}`;
+    const contentType = res.headers.get("Content-Type") ?? "";
+    try {
+      if (contentType.includes("application/json")) {
+        const body = (await res.json()) as ApiError;
+        if (body.message) errMessage = body.message;
+        if (body.code) errMessage = `${body.code}: ${errMessage}`;
+      } else {
+        const text = (await res.text()).trim();
+        if (text) errMessage = text;
+      }
+    } catch {
+      // ignore body parsing errors
+    }
+    throw new Error(errMessage);
+  }
+
+  return res;
+}
+
 export async function login(body: LoginRequest): Promise<UserResponseDto> {
   const tokens = await request<Tokens>("/api/v1/auth/login", {
     method: "POST",
@@ -178,6 +218,12 @@ export async function timesheet(from: string, to: string): Promise<TimesheetRepo
 export function timesheetDownloadUrl(from: string, to: string): string {
   const q = new URLSearchParams({ from, to });
   return `${apiBase()}/api/v1/reports/timesheet.xlsx?${q.toString()}`;
+}
+
+export async function downloadTimesheetXlsx(from: string, to: string): Promise<Blob> {
+  const q = new URLSearchParams({ from, to });
+  const res = await requestRaw(`/api/v1/reports/timesheet.xlsx?${q.toString()}`);
+  return res.blob();
 }
 
 export function authHeader(): Record<string, string> {

@@ -432,6 +432,15 @@ class BackendIntegrationTest {
             val dayCell = dayRow.cells.single { it.workerId == workerId }
             assertEquals(1.5, dayCell.hours, 0.01)
             assertEquals(0.188, dayCell.shiftEquivalent, 0.001)
+
+            val xlsx = c.get("/api/v1/reports/timesheet.xlsx?from=2025-06-11&to=2025-06-11") {
+                bearerAuth(adminTok.accessToken)
+            }
+            assertEquals(HttpStatusCode.OK, xlsx.status)
+            val raw = xlsx.readBytes()
+            assertTrue(raw.size > 200)
+            assertEquals(0x50.toByte(), raw[0])
+            assertEquals(0x4B.toByte(), raw[1])
         }
     }
 
