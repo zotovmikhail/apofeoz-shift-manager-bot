@@ -39,8 +39,14 @@ docker compose -p "$STACK_NAME" -f "$COMPOSE_FILE" --env-file "$ENV_FILE" pull |
 echo "==> validating docker compose config"
 docker compose -p "$STACK_NAME" -f "$COMPOSE_FILE" --env-file "$ENV_FILE" config >/dev/null
 
-echo "==> docker compose up -d --build"
-docker compose -p "$STACK_NAME" -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build
+echo "==> building backend image"
+docker compose -p "$STACK_NAME" -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build backend
+
+echo "==> building web image"
+docker compose -p "$STACK_NAME" -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build web
+
+echo "==> starting services"
+docker compose -p "$STACK_NAME" -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d
 
 echo "==> waiting for health endpoint"
 for i in {1..30}; do
