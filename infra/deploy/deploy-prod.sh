@@ -5,6 +5,8 @@ STACK_NAME="${STACK_NAME:-apofeoz-prod}"
 APP_ROOT="${APP_ROOT:-/opt/apofeoz/app}"
 CFG_ROOT="${CFG_ROOT:-/opt/apofeoz/config}"
 SCRIPTS_ROOT="${SCRIPTS_ROOT:-/opt/apofeoz/scripts}"
+export DOCKER_BUILDKIT="${DOCKER_BUILDKIT:-0}"
+export COMPOSE_DOCKER_CLI_BUILD="${COMPOSE_DOCKER_CLI_BUILD:-0}"
 
 COMPOSE_FILE="$CFG_ROOT/docker-compose.prod.yml"
 ENV_FILE="$CFG_ROOT/.env.prod"
