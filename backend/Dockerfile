@@ -6,7 +6,7 @@ FROM gradle:8.10.2-jdk21-alpine AS build
 WORKDIR /src
 COPY settings.gradle.kts build.gradle.kts gradle.properties ./
 COPY src ./src
-RUN gradle shadowJar --no-daemon -x test
+RUN gradle shadowJar --no-daemon --max-workers=1 -Dorg.gradle.jvmargs="-Xmx768m" -x test
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
