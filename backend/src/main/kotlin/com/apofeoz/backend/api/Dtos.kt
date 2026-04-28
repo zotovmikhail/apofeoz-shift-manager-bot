@@ -9,6 +9,7 @@ data class ErrorResponse(val code: String, val message: String, val details: Map
 
 @Serializable
 data class RegisterRequest(
+    val login: String? = null,
     val email: String? = null,
     val phone: String? = null,
     val firstName: String,

@@ -159,7 +159,7 @@ function LoginForm({ onLogin }: { onLogin: (u: UserResponseDto) => void }) {
       const u = mode === "login"
         ? await login({ login: trimmedLogin, password })
         : await register({
-            email: trimmedLogin,
+            login: trimmedLogin,
             firstName: firstName.trim(),
             lastName: lastName.trim(),
             password,
@@ -231,12 +231,12 @@ function LoginForm({ onLogin }: { onLogin: (u: UserResponseDto) => void }) {
               </>
             )}
             <label className="field">
-              <span>{mode === "login" ? "Логин" : "Email"}</span>
+              <span>Логин</span>
               <input
-                type={mode === "login" ? "text" : "email"}
+                type="text"
                 value={loginValue}
                 onChange={(e) => setLoginValue(e.target.value)}
-                placeholder={mode === "login" ? "email или телефон" : "name@company.com"}
+                placeholder={mode === "login" ? "логин" : "логин для входа"}
                 required
               />
             </label>
@@ -961,7 +961,7 @@ function ProfileTab({ user }: { user: UserResponseDto }) {
 
         <div className="profileGrid">
           <ProfileField label="ID пользователя" value={user.id} />
-          <ProfileField label="Email" value={user.email ?? "—"} />
+          <ProfileField label="Логин" value={user.email ?? user.phone ?? "—"} />
           <ProfileField label="Телефон" value={user.phone ?? "—"} />
           <ProfileField label="Роль" value={roleTitle(user.role)} />
           <ProfileField label="Статус" value={statusTitle(user.status)} />

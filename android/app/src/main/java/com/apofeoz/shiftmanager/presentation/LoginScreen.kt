@@ -60,7 +60,7 @@ import retrofit2.HttpException
 fun LoginScreen(onSuccess: () -> Unit) {
     val context = LocalContext.current.applicationContext
     var isRegister by remember { mutableStateOf(false) }
-    var email by remember { mutableStateOf("") }
+    var loginValue by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var firstName by remember { mutableStateOf("Иван") }
     var lastName by remember { mutableStateOf("Иванов") }
@@ -169,9 +169,9 @@ fun LoginScreen(onSuccess: () -> Unit) {
                         )
                     }
                     OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text(if (isRegister) "EMAIL" else "EMAIL ИЛИ ТЕЛЕФОН") },
+                        value = loginValue,
+                        onValueChange = { loginValue = it },
+                        label = { Text("ЛОГИН") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         shape = RoundedCornerShape(16.dp),
@@ -218,7 +218,7 @@ fun LoginScreen(onSuccess: () -> Unit) {
                                     if (isRegister) {
                                         val t = api.register(
                                             RegisterRequestDto(
-                                                email = email.trim().takeIf { it.isNotEmpty() },
+                                                login = loginValue.trim().takeIf { it.isNotEmpty() },
                                                 firstName = firstName.trim(),
                                                 lastName = lastName.trim(),
                                                 password = password,
@@ -226,7 +226,7 @@ fun LoginScreen(onSuccess: () -> Unit) {
                                         )
                                         tokens.save(t.accessToken, t.refreshToken)
                                     } else {
-                                        val t = api.login(LoginRequestDto(login = email.trim(), password = password))
+                                        val t = api.login(LoginRequestDto(login = loginValue.trim(), password = password))
                                         tokens.save(t.accessToken, t.refreshToken)
                                     }
                                     OutboundSyncScheduler.schedule(context)
@@ -240,7 +240,7 @@ fun LoginScreen(onSuccess: () -> Unit) {
                                 }
                             }
                         },
-                        enabled = !loading && email.isNotBlank() && password.length >= 8 &&
+                        enabled = !loading && loginValue.isNotBlank() && password.length >= 8 &&
                             (!isRegister || (firstName.isNotBlank() && lastName.isNotBlank())),
                         modifier = Modifier
                             .fillMaxWidth()

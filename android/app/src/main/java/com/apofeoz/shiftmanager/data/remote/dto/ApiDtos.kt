@@ -13,6 +13,7 @@ data class TokenResponseDto(
 
 @Serializable
 data class RegisterRequestDto(
+    val login: String? = null,
     val email: String? = null,
     val phone: String? = null,
     val firstName: String,

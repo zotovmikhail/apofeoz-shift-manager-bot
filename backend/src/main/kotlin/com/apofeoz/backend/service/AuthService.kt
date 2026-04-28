@@ -24,13 +24,17 @@ class AuthService(
 ) {
 
     suspend fun register(req: RegisterRequest): TokenResponse {
-        val email = req.email?.trim()?.takeIf { it.isNotEmpty() }
-        val phone = req.phone?.trim()?.takeIf { it.isNotEmpty() }
+        val login = req.login?.trim()?.takeIf { it.isNotEmpty() }
+        val email = if (login != null) login else req.email?.trim()?.takeIf { it.isNotEmpty() }
+        val phone = if (login != null) null else req.phone?.trim()?.takeIf { it.isNotEmpty() }
         if (email == null && phone == null) {
-            throw ApiException(HttpStatusCode.BadRequest, "validation_error", "email or phone required")
+            throw ApiException(HttpStatusCode.BadRequest, "validation_error", "login required")
         }
         if (req.firstName.isBlank() || req.lastName.isBlank() || req.password.length < 8) {
             throw ApiException(HttpStatusCode.BadRequest, "validation_error", "invalid name or password (min 8 chars)")
+        }
+        if (login != null && users.findByLogin(login) != null) {
+            throw conflict("login_taken")
         }
         email?.let { if (users.findByEmail(it) != null) throw conflict("email_taken") }
         phone?.let { if (users.findByPhone(it) != null) throw conflict("phone_taken") }

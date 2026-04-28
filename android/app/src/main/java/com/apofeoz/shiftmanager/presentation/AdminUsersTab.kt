@@ -102,7 +102,7 @@ fun AdminUsersTab(currentUserId: String) {
         OutlinedTextField(
             value = filter,
             onValueChange = { filter = it },
-            label = { Text("Поиск email / телефон / имя") },
+            label = { Text("Поиск логин / телефон / имя") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
@@ -209,7 +209,7 @@ private fun AdminUserDetailScreen(
                     }
                     Text("Имя: ${user.firstName}")
                     Text("Фамилия: ${user.lastName}")
-                    user.email?.let { Text("Email: $it") }
+                    Text("Логин: ${user.email ?: user.phone ?: "—"}")
                     user.phone?.let { Text("Телефон: $it") }
                 }
             }

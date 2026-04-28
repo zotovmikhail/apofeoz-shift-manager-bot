@@ -13,6 +13,7 @@ export type LoginRequest = {
 };
 
 export type RegisterRequest = {
+  login?: string;
   email?: string;
   phone?: string;
   firstName: string;

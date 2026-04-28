@@ -302,7 +302,7 @@ private fun ProfileTab(user: UserResponseDto, isOnline: Boolean, onLoggedOut: ()
                     StatusChip(if (user.status == "ACTIVE") "Активен" else "Неактивен", warning = user.status != "ACTIVE")
                     StatusChip(if (isOnline) "ONLINE" else "OFFLINE", warning = !isOnline)
                 }
-                user.email?.let { Text("Email: $it") }
+                Text("Логин: ${user.email ?: user.phone ?: "—"}")
                 user.phone?.let { Text("Телефон: $it") }
             }
         }
