@@ -40,7 +40,7 @@ const TAB_META: Record<
   workers: {
     label: "Рабочие",
     eyebrow: "Состав бригад",
-    title: "Карточки рабочих и назначение по прорабам",
+    title: "Карточки рабочих и назначение по бригадирам",
     description: "Создавайте карточки, быстро переназначайте рабочих и держите фактический состав бригад в одном экране.",
     icon: <GridIcon />,
   },
@@ -48,7 +48,7 @@ const TAB_META: Record<
     label: "Пользователи",
     eyebrow: "Доступ и роли",
     title: "Роли, статусы и административный контроль",
-    description: "Меняйте роли USER / FOREMAN / ADMIN, блокируйте доступ и сразу видьте текущую структуру аккаунтов.",
+    description: "Меняйте роли ПОЛЬЗОВАТЕЛЬ / БРИГАДИР / АДМИН, блокируйте доступ и сразу видьте текущую структуру аккаунтов.",
     icon: <UsersIcon />,
   },
   reports: {
@@ -439,7 +439,7 @@ function WorkersTab({ onError }: { onError: (msg: string | null) => void }) {
       <div className="metricRail">
         <MetricCard label="Всего рабочих" value={String(items.length)} tone="accent" />
         <MetricCard label="Активных" value={String(activeCount)} />
-        <MetricCard label="Активных прорабов" value={String(foremen.length)} />
+        <MetricCard label="Активных бригадиров" value={String(foremen.length)} />
       </div>
 
       <section className="contentCard">
@@ -467,9 +467,9 @@ function WorkersTab({ onError }: { onError: (msg: string | null) => void }) {
             <input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="необязательно" />
           </label>
           <label className="field">
-            <span>Прораб</span>
+            <span>Бригадир</span>
             <select value={foremanId} onChange={(e) => setForemanId(e.target.value)} required>
-              <option value="" disabled>Выберите прораба</option>
+              <option value="" disabled>Выберите бригадира</option>
               {foremen.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.firstName} {f.lastName}
@@ -495,7 +495,7 @@ function WorkersTab({ onError }: { onError: (msg: string | null) => void }) {
                 <th>Рабочий</th>
                 <th>Должность</th>
                 <th>Статус</th>
-                <th>Прораб</th>
+                <th>Бригадир</th>
                 <th>Действие</th>
               </tr>
             </thead>
@@ -583,7 +583,7 @@ function UsersTab({ onError }: { onError: (msg: string | null) => void }) {
       <div className="metricRail">
         <MetricCard label="Всего пользователей" value={String(items.length)} tone="accent" />
         <MetricCard label="Активных админов" value={String(adminsCount)} />
-        <MetricCard label="Прорабов" value={String(items.filter((item) => item.role === "FOREMAN").length)} />
+        <MetricCard label="Бригадиров" value={String(items.filter((item) => item.role === "FOREMAN").length)} />
       </div>
 
       <section className="contentCard">
@@ -618,9 +618,9 @@ function UsersTab({ onError }: { onError: (msg: string | null) => void }) {
                   <td>{u.email ?? u.phone ?? "—"}</td>
                   <td>
                     <select value={u.role} onChange={(e) => void updateRole(u.id, e.target.value as UserResponseDto["role"])}>
-                      <option value="USER">USER</option>
-                      <option value="FOREMAN">FOREMAN</option>
-                      <option value="ADMIN">ADMIN</option>
+                      <option value="USER">ПОЛЬЗОВАТЕЛЬ</option>
+                      <option value="FOREMAN">БРИГАДИР</option>
+                      <option value="ADMIN">АДМИН</option>
                     </select>
                   </td>
                   <td>
@@ -817,7 +817,7 @@ function ReportsTab({ onError }: { onError: (msg: string | null) => void }) {
                     </div>
                     {timesheetData.workers.map((worker) => (
                       <div key={worker.workerId} className="timesheetWorkerHead">
-                        <span>{worker.foremanDisplayName ?? "Без прораба"}</span>
+                        <span>{worker.foremanDisplayName ?? "Без бригадира"}</span>
                         <strong>{worker.lastName} {worker.firstName}</strong>
                       </div>
                     ))}
@@ -1057,11 +1057,11 @@ function initials(user: UserResponseDto): string {
 function roleTitle(role: UserResponseDto["role"]): string {
   switch (role) {
     case "ADMIN":
-      return "Администратор";
+      return "АДМИН";
     case "FOREMAN":
-      return "Прораб";
+      return "БРИГАДИР";
     default:
-      return "Пользователь";
+      return "ПОЛЬЗОВАТЕЛЬ";
   }
 }
 
