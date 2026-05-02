@@ -8,6 +8,7 @@ import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.update
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
@@ -50,6 +51,42 @@ class SyncBatchRepository {
         }
     }
 
+    suspend fun recordDeviceSeen(
+        userId: UUID,
+        deviceId: String?,
+        appVersion: String?,
+        platform: String?,
+        deviceModel: String?,
+        osVersion: String?,
+        loginSeen: Boolean = false,
+    ) = newSuspendedTransaction(Dispatchers.IO) {
+        val id = deviceId?.trim()?.takeIf { it.isNotEmpty() } ?: return@newSuspendedTransaction
+        val now = OffsetDateTime.now(ZoneOffset.UTC)
+        val existing = UserDevices.selectAll().where { UserDevices.deviceId eq id }.singleOrNull()
+        if (existing == null) {
+            UserDevices.insert {
+                it[UserDevices.deviceId] = id
+                it[UserDevices.lastUserId] = EntityID(userId, Users)
+                it[UserDevices.lastSeenAt] = now
+                it[UserDevices.lastLoginAt] = if (loginSeen) now else null
+                it[UserDevices.appVersion] = appVersion
+                it[UserDevices.platform] = platform ?: "android"
+                it[UserDevices.deviceModel] = deviceModel
+                it[UserDevices.osVersion] = osVersion
+            }
+        } else {
+            UserDevices.update({ UserDevices.deviceId eq id }) {
+                it[UserDevices.lastUserId] = EntityID(userId, Users)
+                it[UserDevices.lastSeenAt] = now
+                if (loginSeen) it[UserDevices.lastLoginAt] = now
+                it[UserDevices.appVersion] = appVersion
+                it[UserDevices.platform] = platform ?: existing[UserDevices.platform]
+                it[UserDevices.deviceModel] = deviceModel
+                it[UserDevices.osVersion] = osVersion
+            }
+        }
+    }
+
     suspend fun insertFailed(
         userId: UUID,
         batchUid: String,
@@ -78,11 +115,46 @@ class SyncBatchRepository {
             .map {
                 FailedBatchRow(
                     id = it[FailedSyncBatches.id].value,
+                    userId = it[FailedSyncBatches.userId].value,
                     batchUid = it[FailedSyncBatches.batchUid],
                     submittedAt = it[FailedSyncBatches.submittedAt],
                     failedIndex = it[FailedSyncBatches.failedIndex],
                     reason = it[FailedSyncBatches.reason],
                     eventsSnapshot = it[FailedSyncBatches.eventsSnapshot],
+                )
+            }
+    }
+
+    suspend fun listAllFailed(): List<FailedBatchRow> = newSuspendedTransaction(Dispatchers.IO) {
+        FailedSyncBatches.selectAll()
+            .orderBy(FailedSyncBatches.createdAt, SortOrder.DESC)
+            .map {
+                FailedBatchRow(
+                    id = it[FailedSyncBatches.id].value,
+                    userId = it[FailedSyncBatches.userId].value,
+                    batchUid = it[FailedSyncBatches.batchUid],
+                    submittedAt = it[FailedSyncBatches.submittedAt],
+                    failedIndex = it[FailedSyncBatches.failedIndex],
+                    reason = it[FailedSyncBatches.reason],
+                    eventsSnapshot = it[FailedSyncBatches.eventsSnapshot],
+                )
+            }
+    }
+
+    suspend fun listDevices(): List<DeviceRow> = newSuspendedTransaction(Dispatchers.IO) {
+        UserDevices.selectAll()
+            .orderBy(UserDevices.lastSeenAt, SortOrder.DESC)
+            .map {
+                DeviceRow(
+                    deviceId = it[UserDevices.deviceId],
+                    lastUserId = it[UserDevices.lastUserId]?.value,
+                    lastSeenAt = it[UserDevices.lastSeenAt],
+                    lastLoginAt = it[UserDevices.lastLoginAt],
+                    appVersion = it[UserDevices.appVersion],
+                    platform = it[UserDevices.platform],
+                    deviceModel = it[UserDevices.deviceModel],
+                    osVersion = it[UserDevices.osVersion],
+                    label = it[UserDevices.label],
                 )
             }
     }
@@ -99,6 +171,7 @@ class SyncBatchRepository {
         }.map {
             FailedBatchRow(
                 id = it[FailedSyncBatches.id].value,
+                userId = it[FailedSyncBatches.userId].value,
                 batchUid = it[FailedSyncBatches.batchUid],
                 submittedAt = it[FailedSyncBatches.submittedAt],
                 failedIndex = it[FailedSyncBatches.failedIndex],
@@ -111,9 +184,22 @@ class SyncBatchRepository {
 
 data class FailedBatchRow(
     val id: UUID,
+    val userId: UUID,
     val batchUid: String,
     val submittedAt: OffsetDateTime,
     val failedIndex: Int,
     val reason: String,
     val eventsSnapshot: String,
+)
+
+data class DeviceRow(
+    val deviceId: String,
+    val lastUserId: UUID?,
+    val lastSeenAt: OffsetDateTime,
+    val lastLoginAt: OffsetDateTime?,
+    val appVersion: String?,
+    val platform: String,
+    val deviceModel: String?,
+    val osVersion: String?,
+    val label: String?,
 )

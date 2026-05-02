@@ -457,6 +457,7 @@ private fun ProfileTab(user: UserResponseDto, isOnline: Boolean, onLoggedOut: ()
                     }
                 }
                 AppContainer.tokenRepository.clear()
+                AppContainer.cachedUserRepository.clear()
                 onLoggedOut()
             }
         }) { Text("Выйти") }
@@ -539,6 +540,8 @@ private fun WorkersTab(user: UserResponseDto, snackbarHostState: SnackbarHostSta
     var activeSessions by remember { mutableStateOf<List<LocalActiveSession>>(emptyList()) }
     var serverActiveByWorkerId by remember { mutableStateOf<Map<String, String>>(emptyMap()) } // workerId -> sessionId
     var pendingEndingSessionIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var blockedWorkerIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var blockedSessionIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     val sessions = AppContainer.sessionStateRepository
     val queue = AppContainer.batchQueue
     val cache = AppContainer.activeSessionsCache
@@ -561,6 +564,8 @@ private fun WorkersTab(user: UserResponseDto, snackbarHostState: SnackbarHostSta
             try {
                 workers = AppContainer.api.workers()
                 pendingEndingSessionIds = pendingActions.getEndingSessionIds()
+                blockedWorkerIds = pendingActions.getBlockedWorkerIds()
+                blockedSessionIds = pendingActions.getBlockedSessionIds()
                 // 1) персистентный кэш (важно для офлайна/после перезапуска)
                 val cached = cache.get()
                 serverActiveByWorkerId = cached.byWorkerId
@@ -621,8 +626,12 @@ private fun WorkersTab(user: UserResponseDto, snackbarHostState: SnackbarHostSta
                 val isThisActive = current != null
                 val cachedServerSessionId = serverActiveByWorkerId[w.id]
                 val isServerEndingPending = cachedServerSessionId != null && cachedServerSessionId in pendingEndingSessionIds
+                val isBlockedWorker = w.id in blockedWorkerIds
+                val isBlockedSession = current?.sessionId in blockedSessionIds ||
+                    (cachedServerSessionId != null && cachedServerSessionId in blockedSessionIds)
                 val subtitle = when {
                     w.status != "ACTIVE" -> "Неактивен"
+                    isBlockedWorker || isBlockedSession -> "Конфликт синхронизации"
                     isServerEndingPending -> "🟢 Не работает (END в очереди на отправку)"
                     isThisActive -> "🔴 Смена идёт (нажмите, чтобы завершить)"
                     else -> "🟢 Не работает (нажмите, чтобы начать смену)"
@@ -643,7 +652,7 @@ private fun WorkersTab(user: UserResponseDto, snackbarHostState: SnackbarHostSta
                                 Modifier
                             },
                         )
-                        .clickable(enabled = w.status == "ACTIVE") {
+                        .clickable(enabled = w.status == "ACTIVE" && !isBlockedWorker && !isBlockedSession) {
                             scope.launch {
                                 val existing = sessions.getActiveFor(w.id)
                                 val cachedServerSessionIdNow = serverActiveByWorkerId[w.id]

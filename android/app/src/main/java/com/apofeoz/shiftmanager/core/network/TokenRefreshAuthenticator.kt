@@ -13,6 +13,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.Route
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 /**
@@ -50,10 +51,15 @@ class TokenRefreshAuthenticator(
                 AppContainer.notifySessionExpired()
                 return null
             }
-            val pair = refreshTokens(refreshToken) ?: run {
-                runBlocking { tokens.clear() }
-                AppContainer.notifySessionExpired()
-                return null
+            val result = refreshTokens(refreshToken)
+            val pair = when (result) {
+                is RefreshResult.Success -> result.accessToken to result.refreshToken
+                RefreshResult.AuthRejected -> {
+                    runBlocking { tokens.clear() }
+                    AppContainer.notifySessionExpired()
+                    return null
+                }
+                RefreshResult.NetworkFailure -> return null
             }
             runBlocking { tokens.save(pair.first, pair.second) }
             return response.request.newBuilder()
@@ -62,7 +68,7 @@ class TokenRefreshAuthenticator(
         }
     }
 
-    private fun refreshTokens(refreshToken: String): Pair<String, String>? {
+    private fun refreshTokens(refreshToken: String): RefreshResult {
         val url = "${baseUrl.trimEnd('/')}/api/v1/auth/refresh"
         val bodyJson = json.encodeToString(RefreshRequestDto(refreshToken))
         val body = bodyJson.toRequestBody(JSON_MEDIA_TYPE)
@@ -71,14 +77,27 @@ class TokenRefreshAuthenticator(
             .post(body)
             .header("Content-Type", "application/json")
             .build()
-        refreshClient.newCall(request).execute().use { resp ->
-            if (!resp.isSuccessful) return null
-            val text = resp.body?.string() ?: return null
-            val parsed = runCatching {
-                json.decodeFromString(TokenResponseDto.serializer(), text)
-            }.getOrNull() ?: return null
-            return parsed.accessToken to parsed.refreshToken
+        return try {
+            refreshClient.newCall(request).execute().use { resp ->
+                if (resp.code == 401 || resp.code == 403) return RefreshResult.AuthRejected
+                if (!resp.isSuccessful) return RefreshResult.NetworkFailure
+                val text = resp.body?.string() ?: return RefreshResult.NetworkFailure
+                val parsed = runCatching {
+                    json.decodeFromString(TokenResponseDto.serializer(), text)
+                }.getOrNull() ?: return RefreshResult.NetworkFailure
+                RefreshResult.Success(parsed.accessToken, parsed.refreshToken)
+            }
+        } catch (_: IOException) {
+            RefreshResult.NetworkFailure
+        } catch (_: Exception) {
+            RefreshResult.NetworkFailure
         }
+    }
+
+    private sealed interface RefreshResult {
+        data class Success(val accessToken: String, val refreshToken: String) : RefreshResult
+        data object AuthRejected : RefreshResult
+        data object NetworkFailure : RefreshResult
     }
 
     companion object {

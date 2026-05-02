@@ -20,6 +20,9 @@ data class LocalFailedBatch(
     val message: String,
     val submittedAt: String,
     val bodyJson: String,
+    val failedIndex: Int? = null,
+    val reason: String? = null,
+    val failedEventType: String? = null,
 )
 
 @Serializable

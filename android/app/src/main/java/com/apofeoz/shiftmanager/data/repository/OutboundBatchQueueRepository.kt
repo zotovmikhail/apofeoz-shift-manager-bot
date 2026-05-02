@@ -2,6 +2,7 @@ package com.apofeoz.shiftmanager.data.repository
 
 import android.content.Context
 import androidx.room.withTransaction
+import com.apofeoz.shiftmanager.core.di.AppContainer
 import com.apofeoz.shiftmanager.data.local.OutboundBatchEntity
 import com.apofeoz.shiftmanager.data.local.ShiftDatabase
 import com.apofeoz.shiftmanager.data.remote.dto.SyncBatchRequestDto
@@ -10,6 +11,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 
 class OutboundBatchQueueRepository(
     private val context: Context,
@@ -19,24 +22,44 @@ class OutboundBatchQueueRepository(
     private val dao get() = db.outboundDao()
 
     suspend fun claimNextBatch(): OutboundBatchEntity? = db.withTransaction {
-        val id = dao.findFirstPendingId() ?: return@withTransaction null
-        if (dao.markInFlight(id) == 0) return@withTransaction null
+        val ownerUserId = AppContainer.cachedUserRepository.get()?.id ?: return@withTransaction null
+        val id = dao.findFirstPendingIdForOwner(ownerUserId) ?: return@withTransaction null
+        if (dao.markInFlight(id, OffsetDateTime.now(ZoneOffset.UTC).toString()) == 0) return@withTransaction null
         dao.getById(id)
     }
 
     suspend fun enqueue(batch: SyncBatchRequestDto) {
-        val body = json.encodeToString(SyncBatchRequestDto.serializer(), batch)
+        val cachedUser = AppContainer.cachedUserRepository.get()
+        val device = AppContainer.deviceRepository.getDeviceInfo()
+        val enriched = batch.copy(
+            deviceId = device.deviceId,
+            appVersion = device.appVersion,
+            platform = device.platform,
+            deviceModel = device.deviceModel,
+            osVersion = device.osVersion,
+        )
+        val body = json.encodeToString(SyncBatchRequestDto.serializer(), enriched)
         dao.insert(
             OutboundBatchEntity(
-                batchUid = batch.batchUid,
-                submittedAt = batch.submittedAt,
+                batchUid = enriched.batchUid,
+                submittedAt = enriched.submittedAt,
                 bodyJson = body,
+                ownerUserId = cachedUser?.id,
+                deviceId = device.deviceId,
+                appVersion = device.appVersion,
             ),
         )
         OutboundSyncScheduler.schedule(context)
     }
 
     suspend fun pendingCount(): Int = dao.countPending()
+
+    suspend fun blockedAuthCount(): Int = dao.countBlockedAuth()
+
+    suspend fun unblockAuthForCurrentUser() {
+        val ownerUserId = AppContainer.cachedUserRepository.get()?.id ?: return
+        dao.unblockAuthForOwner(ownerUserId)
+    }
 
     /**
      * Returns true when queue still contains START_SESSION for this worker/session.

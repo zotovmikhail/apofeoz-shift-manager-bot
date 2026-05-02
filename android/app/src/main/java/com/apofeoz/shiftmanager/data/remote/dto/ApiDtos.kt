@@ -87,6 +87,11 @@ data class SyncBatchRequestDto(
     val batchUid: String,
     val submittedAt: String,
     val events: List<SyncEventDto>,
+    val deviceId: String? = null,
+    val appVersion: String? = null,
+    val platform: String? = null,
+    val deviceModel: String? = null,
+    val osVersion: String? = null,
 )
 
 @Serializable

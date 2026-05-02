@@ -87,10 +87,15 @@ data class SyncBatchRequest(
     val batchUid: String,
     val submittedAt: String,
     val events: List<SyncEventInput>,
+    val deviceId: String? = null,
+    val appVersion: String? = null,
+    val platform: String? = null,
+    val deviceModel: String? = null,
+    val osVersion: String? = null,
 )
 
 @Serializable
-data class SyncEventInput(val type: String, val payload: JsonElement)
+data class SyncEventInput(val type: String, val payload: JsonElement, val operationId: String? = null)
 
 @Serializable
 data class SyncBatchResponse(val applied: Boolean, val sessions: List<SessionResponse>)
@@ -163,6 +168,7 @@ data class TimesheetReportResponse(
 @Serializable
 data class FailedBatchListItem(
     val id: String,
+    val userId: String? = null,
     val batchUid: String,
     val submittedAt: String,
     val failedIndex: Int,
@@ -172,9 +178,23 @@ data class FailedBatchListItem(
 @Serializable
 data class FailedBatchDetailResponse(
     val id: String,
+    val userId: String? = null,
     val batchUid: String,
     val submittedAt: String,
     val failedIndex: Int,
     val reason: String,
     val eventsSnapshot: JsonArray,
+)
+
+@Serializable
+data class DeviceResponse(
+    val deviceId: String,
+    val lastUserId: String?,
+    val lastSeenAt: String,
+    val lastLoginAt: String?,
+    val appVersion: String?,
+    val platform: String,
+    val deviceModel: String?,
+    val osVersion: String?,
+    val label: String?,
 )

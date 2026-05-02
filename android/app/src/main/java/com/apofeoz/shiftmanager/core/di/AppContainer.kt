@@ -6,6 +6,8 @@ import com.apofeoz.shiftmanager.BuildConfig
 import com.apofeoz.shiftmanager.core.network.ApiClient
 import com.apofeoz.shiftmanager.core.network.NetworkStatusRepository
 import com.apofeoz.shiftmanager.data.local.ActiveSessionsCacheRepository
+import com.apofeoz.shiftmanager.data.local.CachedUserRepository
+import com.apofeoz.shiftmanager.data.local.DeviceRepository
 import com.apofeoz.shiftmanager.data.local.LocalFailedOutboundBatchesRepository
 import com.apofeoz.shiftmanager.data.local.PendingSessionActionsRepository
 import com.apofeoz.shiftmanager.data.local.ShiftDatabase
@@ -41,6 +43,8 @@ object AppContainer {
     lateinit var activeSessionsCache: ActiveSessionsCacheRepository
     lateinit var pendingSessionActions: PendingSessionActionsRepository
     lateinit var localFailedBatches: LocalFailedOutboundBatchesRepository
+    lateinit var cachedUserRepository: CachedUserRepository
+    lateinit var deviceRepository: DeviceRepository
 
     fun init(app: Application) {
         jsonFormat = Json {
@@ -53,8 +57,10 @@ object AppContainer {
         activeSessionsCache = ActiveSessionsCacheRepository(app)
         pendingSessionActions = PendingSessionActionsRepository(app)
         localFailedBatches = LocalFailedOutboundBatchesRepository(app)
+        cachedUserRepository = CachedUserRepository(app)
+        deviceRepository = DeviceRepository(app)
         database = Room.databaseBuilder(app, ShiftDatabase::class.java, "shift.db")
-            .fallbackToDestructiveMigration()
+            .addMigrations(ShiftDatabase.MIGRATION_1_2)
             .build()
         val baseUrl = BuildConfig.API_BASE_URL.trimEnd('/') + "/"
         api = ApiClient.create(baseUrl, tokenRepository, jsonFormat, BuildConfig.DEBUG)

@@ -101,7 +101,16 @@ fun Application.configureRouting(
 
                 get("/sync/failed-batches") {
                     val p = call.jwtPrincipal()
-                    call.respond(syncService.listFailed(p.userId))
+                    call.respond(
+                        if (Role.valueOf(p.role) == Role.ADMIN) syncService.listAllFailed()
+                        else syncService.listFailed(p.userId),
+                    )
+                }
+
+                get("/devices") {
+                    val p = call.jwtPrincipal()
+                    p.requireRoles(Role.ADMIN)
+                    call.respond(syncService.listDevices())
                 }
 
                 get("/sync/failed-batches/{id}") {

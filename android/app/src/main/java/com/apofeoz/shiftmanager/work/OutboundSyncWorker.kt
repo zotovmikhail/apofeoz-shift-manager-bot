@@ -5,7 +5,9 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.apofeoz.shiftmanager.core.di.AppContainer
 import com.apofeoz.shiftmanager.data.local.LocalFailedBatch
+import com.apofeoz.shiftmanager.data.remote.dto.ErrorResponseDto
 import com.apofeoz.shiftmanager.data.remote.dto.SyncBatchRequestDto
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -65,31 +67,31 @@ class OutboundSyncWorker(
             when (e.code()) {
                 401 -> {
                     // Auth is invalid; keep batch pending, force re-login.
-                    dao.resetPending(row.id)
+                    dao.markBlockedAuth(row.id, e.code(), e.message())
                     AppContainer.notifySessionExpired()
                     Result.failure()
                 }
                 409 -> {
-                    // Conflict: server didn't apply batch; still clear local state to avoid UI deadlock.
-                    runCatching {
-                        val body = json.decodeFromString(SyncBatchRequestDto.serializer(), row.bodyJson)
-                        body.events.forEach { ev ->
-                            when (ev.type) {
-                                "END_SESSION" -> {
-                                    val sid = ev.payload.jsonObject["sessionId"]?.jsonPrimitive?.content
-                                    if (!sid.isNullOrBlank()) {
-                                        sessions.removeBySessionId(sid)
-                                        pendingActions.removeEnding(sid)
-                                        pendingActions.clearBlockedForSession(sid)
-                                    }
-                                }
-                                "START_SESSION" -> {
-                                    val wid = ev.payload.jsonObject["workerId"]?.jsonPrimitive?.content
-                                    if (!wid.isNullOrBlank()) pendingActions.clearBlockedForWorker(wid)
-                                }
-                            }
-                        }
+                    val details = parseError(e)
+                    val body = runCatching { json.decodeFromString(SyncBatchRequestDto.serializer(), row.bodyJson) }.getOrNull()
+                    val failedIndex = details?.details?.get("failedEventIndex")?.jsonPrimitive?.content?.toIntOrNull()
+                    val failedEventType = details?.details?.get("failedEventType")?.jsonPrimitive?.content
+                    val reason = details?.details?.get("reason")?.jsonPrimitive?.content ?: details?.message ?: e.message()
+                    val failedEvent = failedIndex?.let { idx -> body?.events?.getOrNull(idx) }
+                    if (failedEvent != null) {
+                        blockAffectedEntity(failedEvent)
                     }
+                    failedLocal.add(
+                        LocalFailedBatch(
+                            httpCode = e.code(),
+                            message = e.message(),
+                            submittedAt = row.submittedAt,
+                            bodyJson = row.bodyJson,
+                            failedIndex = failedIndex,
+                            reason = reason,
+                            failedEventType = failedEventType ?: failedEvent?.type,
+                        ),
+                    )
                     dao.deleteById(row.id)
                     syncStatus.setLastSyncAt(OffsetDateTime.now(ZoneOffset.UTC))
                     if (dao.countPending() > 0) {
@@ -102,18 +104,10 @@ class OutboundSyncWorker(
                     val body = runCatching { json.decodeFromString(SyncBatchRequestDto.serializer(), row.bodyJson) }.getOrNull()
                     if (body != null) {
                         body.events.forEach { ev ->
-                            when (ev.type) {
-                                "START_SESSION" -> {
-                                    val wid = ev.payload.jsonObject["workerId"]?.jsonPrimitive?.content
-                                    if (!wid.isNullOrBlank()) pendingActions.addBlockedWorker(wid)
-                                }
-                                "END_SESSION" -> {
-                                    val sid = ev.payload.jsonObject["sessionId"]?.jsonPrimitive?.content
-                                    if (!sid.isNullOrBlank()) pendingActions.addBlockedSession(sid)
-                                }
-                            }
+                            blockAffectedEntity(ev)
                         }
                     }
+                    val details = parseError(e)
                     runCatching {
                         failedLocal.add(
                             LocalFailedBatch(
@@ -121,6 +115,7 @@ class OutboundSyncWorker(
                                 message = e.message(),
                                 submittedAt = row.submittedAt,
                                 bodyJson = row.bodyJson,
+                                reason = details?.message ?: e.message(),
                             ),
                         )
                     }
@@ -143,5 +138,24 @@ class OutboundSyncWorker(
             dao.resetPending(row.id)
             Result.retry()
         }
+    }
+
+    private suspend fun blockAffectedEntity(ev: com.apofeoz.shiftmanager.data.remote.dto.SyncEventDto) {
+        val pendingActions = AppContainer.pendingSessionActions
+        when (ev.type) {
+            "START_SESSION" -> {
+                val wid = ev.payload.jsonObject["workerId"]?.jsonPrimitive?.content
+                if (!wid.isNullOrBlank()) pendingActions.addBlockedWorker(wid)
+            }
+            "END_SESSION" -> {
+                val sid = ev.payload.jsonObject["sessionId"]?.jsonPrimitive?.content
+                if (!sid.isNullOrBlank()) pendingActions.addBlockedSession(sid)
+            }
+        }
+    }
+
+    private fun parseError(e: HttpException): ErrorResponseDto? {
+        val raw = e.response()?.errorBody()?.string() ?: return null
+        return runCatching { json.decodeFromString(ErrorResponseDto.serializer(), raw) }.getOrNull()
     }
 }

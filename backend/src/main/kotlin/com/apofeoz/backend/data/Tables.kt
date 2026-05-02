@@ -2,6 +2,7 @@ package com.apofeoz.backend.data
 
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ReferenceOption
+import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.javatime.timestampWithTimeZone
 
 object Users : UUIDTable("users") {
@@ -51,6 +52,12 @@ object SyncBatches : UUIDTable("sync_batches") {
     val submittedAt = timestampWithTimeZone("submitted_at")
     val appliedAt = timestampWithTimeZone("applied_at")
     val resultJson = jsonb("result_json").nullable()
+    val deviceId = text("device_id").nullable()
+    val appVersion = text("app_version").nullable()
+    val platform = text("platform").nullable()
+    val deviceModel = text("device_model").nullable()
+    val osVersion = text("os_version").nullable()
+    val status = text("status")
 }
 
 object SyncEvents : UUIDTable("sync_events") {
@@ -58,6 +65,9 @@ object SyncEvents : UUIDTable("sync_events") {
     val type = text("type")
     val payload = jsonb("payload")
     val createdAt = timestampWithTimeZone("created_at")
+    val operationId = text("operation_id").nullable()
+    val status = text("status")
+    val serverEntityId = uuid("server_entity_id").nullable()
 }
 
 object FailedSyncBatches : UUIDTable("failed_sync_batches") {
@@ -68,4 +78,18 @@ object FailedSyncBatches : UUIDTable("failed_sync_batches") {
     val failedIndex = integer("failed_index")
     val reason = text("reason")
     val createdAt = timestampWithTimeZone("created_at")
+}
+
+object UserDevices : Table("user_devices") {
+    val deviceId = text("device_id")
+    val lastUserId = reference("last_user_id", Users, onDelete = ReferenceOption.SET_NULL).nullable()
+    val lastSeenAt = timestampWithTimeZone("last_seen_at")
+    val lastLoginAt = timestampWithTimeZone("last_login_at").nullable()
+    val appVersion = text("app_version").nullable()
+    val platform = text("platform")
+    val deviceModel = text("device_model").nullable()
+    val osVersion = text("os_version").nullable()
+    val label = text("label").nullable()
+
+    override val primaryKey = PrimaryKey(deviceId)
 }

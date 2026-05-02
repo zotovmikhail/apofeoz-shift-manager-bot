@@ -1,6 +1,7 @@
 package com.apofeoz.backend
 
 import com.apofeoz.backend.api.CreateWorkerRequest
+import com.apofeoz.backend.api.DeviceResponse
 import com.apofeoz.backend.api.ErrorResponse
 import com.apofeoz.backend.api.FailedBatchDetailResponse
 import com.apofeoz.backend.api.HoursReportResponse
@@ -180,6 +181,11 @@ class BackendIntegrationTest {
             val batch = SyncBatchRequest(
                 batchUid = batchUid,
                 submittedAt = "${reportDay}T18:00:00Z",
+                deviceId = "device-${UUID.randomUUID()}",
+                appVersion = "0.1.test",
+                platform = "android",
+                deviceModel = "Test Device",
+                osVersion = "15",
                 events = listOf(
                     SyncEventInput(
                         "START_SESSION",
@@ -188,6 +194,7 @@ class BackendIntegrationTest {
                             put("workerId", JsonPrimitive(workerId))
                             put("startAt", JsonPrimitive(startAt))
                         },
+                        operationId = "op-start-${UUID.randomUUID()}",
                     ),
                     SyncEventInput(
                         "END_SESSION",
@@ -195,6 +202,7 @@ class BackendIntegrationTest {
                             put("sessionId", JsonPrimitive(sessionId))
                             put("endAt", JsonPrimitive(endAt))
                         },
+                        operationId = "op-end-${UUID.randomUUID()}",
                     ),
                 ),
             )
@@ -236,6 +244,14 @@ class BackendIntegrationTest {
             assertTrue(raw.size > 200)
             assertEquals(0x50.toByte(), raw[0])
             assertEquals(0x4B.toByte(), raw[1])
+
+            val devices = c.get("/api/v1/devices") { bearerAuth(adminTok.accessToken) }
+            assertEquals(HttpStatusCode.OK, devices.status, devices.bodyAsText())
+            val deviceItems = devices.body<List<DeviceResponse>>()
+            val savedDevice = deviceItems.single { it.deviceId == batch.deviceId }
+            assertEquals(foremanUserId, savedDevice.lastUserId)
+            assertEquals("0.1.test", savedDevice.appVersion)
+            assertEquals("Test Device", savedDevice.deviceModel)
         }
     }
 

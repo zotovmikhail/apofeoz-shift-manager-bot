@@ -1,6 +1,8 @@
 import type {
   ApiError,
   CreateWorkerRequestDto,
+  DeviceResponseDto,
+  FailedBatchListItemDto,
   HoursReportResponseDto,
   LoginRequest,
   PatchUserRequestDto,
@@ -224,6 +226,14 @@ export async function downloadTimesheetXlsx(from: string, to: string): Promise<B
   const q = new URLSearchParams({ from, to });
   const res = await requestRaw(`/api/v1/reports/timesheet.xlsx?${q.toString()}`);
   return res.blob();
+}
+
+export async function devices(): Promise<DeviceResponseDto[]> {
+  return request<DeviceResponseDto[]>("/api/v1/devices");
+}
+
+export async function failedBatches(): Promise<FailedBatchListItemDto[]> {
+  return request<FailedBatchListItemDto[]>("/api/v1/sync/failed-batches");
 }
 
 export function authHeader(): Record<string, string> {

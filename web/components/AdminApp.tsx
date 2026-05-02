@@ -4,7 +4,9 @@ import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import {
   bootstrapSession,
   createWorker,
+  devices,
   downloadTimesheetXlsx,
+  failedBatches,
   login,
   logout,
   patchUser,
@@ -15,9 +17,9 @@ import {
   users,
   workers,
 } from "../lib/api";
-import type { HoursReportResponseDto, TimesheetDayCellDto, TimesheetReportResponseDto, UserResponseDto, WorkerResponseDto } from "../lib/types";
+import type { DeviceResponseDto, FailedBatchListItemDto, HoursReportResponseDto, TimesheetDayCellDto, TimesheetReportResponseDto, UserResponseDto, WorkerResponseDto } from "../lib/types";
 
-type TabKey = "workers" | "users" | "reports" | "profile";
+type TabKey = "workers" | "users" | "reports" | "diagnostics" | "profile";
 
 type SummaryMetric = {
   label: string;
@@ -25,7 +27,7 @@ type SummaryMetric = {
   tone?: "accent" | "neutral";
 };
 
-const TAB_ORDER: TabKey[] = ["workers", "users", "reports", "profile"];
+const TAB_ORDER: TabKey[] = ["workers", "users", "reports", "diagnostics", "profile"];
 
 const TAB_META: Record<
   TabKey,
@@ -57,6 +59,13 @@ const TAB_META: Record<
     title: "Табельная матрица по диапазону дат",
     description: "Формируйте тот же табель, что уходит в XLSX, и просматривайте его прямо в браузере по колонкам и датам.",
     icon: <ReportIcon />,
+  },
+  diagnostics: {
+    label: "Синхронизация",
+    eyebrow: "Устройства и ошибки",
+    title: "Диагностика offline-синхронизации",
+    description: "Контролируйте устройства бригадиров, последние подключения и батчи, которые требуют ручной проверки.",
+    icon: <ShieldIcon />,
   },
   profile: {
     label: "Профиль",
@@ -354,6 +363,7 @@ function AdminPanel({
           {tab === "workers" && <WorkersTab onError={onError} />}
           {tab === "users" && <UsersTab onError={onError} />}
           {tab === "reports" && <ReportsTab onError={onError} />}
+          {tab === "diagnostics" && <DiagnosticsTab onError={onError} />}
           {tab === "profile" && <ProfileTab user={user} />}
         </section>
       </section>
@@ -932,6 +942,125 @@ function formatWeekday(raw: string): string {
   return new Intl.DateTimeFormat("ru-RU", { weekday: "short" }).format(date);
 }
 
+function DiagnosticsTab({ onError }: { onError: (msg: string | null) => void }) {
+  const [deviceItems, setDeviceItems] = useState<DeviceResponseDto[]>([]);
+  const [failedItems, setFailedItems] = useState<FailedBatchListItemDto[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  async function load() {
+    setLoading(true);
+    onError(null);
+    try {
+      const [nextDevices, nextFailed] = await Promise.all([devices(), failedBatches()]);
+      setDeviceItems(nextDevices);
+      setFailedItems(nextFailed);
+    } catch (e) {
+      onError(e instanceof Error ? e.message : "Не удалось загрузить диагностику");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  return (
+    <section className="contentStack">
+      <div className="metricRail">
+        <MetricCard label="Устройств" value={String(deviceItems.length)} tone="accent" />
+        <MetricCard label="Failed batches" value={String(failedItems.length)} />
+        <MetricCard label="Android" value={String(deviceItems.filter((item) => item.platform === "android").length)} />
+      </div>
+
+      <section className="contentCard">
+        <div className="sectionHeading">
+          <div>
+            <p className="eyebrow">Устройства</p>
+            <h3>Последние установки мобильного приложения</h3>
+          </div>
+          <button className="ghostButton" onClick={() => void load()} disabled={loading}>
+            {loading ? "Обновляем..." : "Обновить"}
+          </button>
+        </div>
+        <div className="tableShell">
+          <table className="dataTable">
+            <thead>
+              <tr>
+                <th>Устройство</th>
+                <th>Пользователь</th>
+                <th>Версия</th>
+                <th>Последний сигнал</th>
+              </tr>
+            </thead>
+            <tbody>
+              {deviceItems.map((item) => (
+                <tr key={item.deviceId}>
+                  <td>
+                    <div className="tableIdentity">
+                      <strong>{item.deviceModel ?? "Android device"}</strong>
+                      <span>{item.deviceId}</span>
+                    </div>
+                  </td>
+                  <td>{item.lastUserId ?? "—"}</td>
+                  <td>{item.appVersion ?? "—"} · {item.osVersion ?? item.platform}</td>
+                  <td>{formatDateTime(item.lastSeenAt)}</td>
+                </tr>
+              ))}
+              {deviceItems.length === 0 && (
+                <tr>
+                  <td colSpan={4}>Устройства ещё не зарегистрированы.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="contentCard">
+        <div className="sectionHeading">
+          <div>
+            <p className="eyebrow">Конфликты</p>
+            <h3>Батчи, требующие ручной проверки</h3>
+          </div>
+        </div>
+        <div className="tableShell">
+          <table className="dataTable">
+            <thead>
+              <tr>
+                <th>Batch</th>
+                <th>Пользователь</th>
+                <th>Событие</th>
+                <th>Причина</th>
+              </tr>
+            </thead>
+            <tbody>
+              {failedItems.map((item) => (
+                <tr key={item.id}>
+                  <td>
+                    <div className="tableIdentity">
+                      <strong>{item.batchUid}</strong>
+                      <span>{formatDateTime(item.submittedAt)}</span>
+                    </div>
+                  </td>
+                  <td>{item.userId ?? "—"}</td>
+                  <td>#{item.failedIndex}</td>
+                  <td>{item.reason}</td>
+                </tr>
+              ))}
+              {failedItems.length === 0 && (
+                <tr>
+                  <td colSpan={4}>Конфликтов синхронизации нет.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  );
+}
+
 function ProfileTab({ user }: { user: UserResponseDto }) {
   const metrics: SummaryMetric[] = [
     { label: "Роль", value: roleTitle(user.role), tone: "accent" },
@@ -969,6 +1098,15 @@ function ProfileTab({ user }: { user: UserResponseDto }) {
       </section>
     </section>
   );
+}
+
+function formatDateTime(raw: string): string {
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return raw;
+  return new Intl.DateTimeFormat("ru-RU", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(parsed);
 }
 
 function MetricCard({ label, value, tone = "neutral" }: SummaryMetric) {

@@ -69,9 +69,17 @@ class SyncService(
             req.events.size,
             req.events.firstOrNull()?.type ?: "—",
         )
+        syncRepo.recordDeviceSeen(
+            userId = userId,
+            deviceId = req.deviceId,
+            appVersion = req.appVersion,
+            platform = req.platform,
+            deviceModel = req.deviceModel,
+            osVersion = req.osVersion,
+        )
 
         try {
-            val result = applyBatchTransaction(userId, req.batchUid, submittedAt, req.events, eventsForStorage)
+            val result = applyBatchTransaction(userId, req, submittedAt, eventsForStorage)
             log.info("sync_batch_applied userId={} batchUid={}", userId, req.batchUid)
             return result
         } catch (e: SyncApplyException) {
@@ -116,11 +124,12 @@ class SyncService(
 
     private suspend fun applyBatchTransaction(
         userId: UUID,
-        batchUid: String,
+        req: SyncBatchRequest,
         submittedAt: OffsetDateTime,
-        events: List<SyncEventInput>,
         eventsForStorage: List<Pair<String, String>>,
     ): SyncBatchResponse = newSuspendedTransaction(Dispatchers.IO) {
+        val batchUid = req.batchUid
+        val events = req.events
         val dup = SyncBatches.selectAll().where { SyncBatches.batchUid eq batchUid }.singleOrNull()
         if (dup != null) {
             val r = dup[SyncBatches.resultJson]
@@ -270,8 +279,14 @@ class SyncService(
             it[SyncBatches.submittedAt] = submittedAt
             it[SyncBatches.appliedAt] = now
             it[SyncBatches.resultJson] = resultJson
+            it[SyncBatches.deviceId] = req.deviceId
+            it[SyncBatches.appVersion] = req.appVersion
+            it[SyncBatches.platform] = req.platform
+            it[SyncBatches.deviceModel] = req.deviceModel
+            it[SyncBatches.osVersion] = req.osVersion
+            it[SyncBatches.status] = "ACKED"
         }
-        eventsForStorage.forEach { (type, payload) ->
+        eventsForStorage.forEachIndexed { index, (type, payload) ->
             val evId = UUID.randomUUID()
             SyncEvents.insert {
                 it[SyncEvents.id] = evId
@@ -279,6 +294,8 @@ class SyncService(
                 it[SyncEvents.type] = type
                 it[SyncEvents.payload] = payload
                 it[SyncEvents.createdAt] = now
+                it[SyncEvents.operationId] = events.getOrNull(index)?.operationId
+                it[SyncEvents.status] = "ACKED"
             }
         }
 
@@ -289,10 +306,38 @@ class SyncService(
         syncRepo.listFailed(userId).map {
             FailedBatchListItem(
                 id = it.id.toString(),
+                userId = it.userId.toString(),
                 batchUid = it.batchUid,
                 submittedAt = it.submittedAt.toString(),
                 failedIndex = it.failedIndex,
                 reason = it.reason,
+            )
+        }
+
+    suspend fun listAllFailed(): List<FailedBatchListItem> =
+        syncRepo.listAllFailed().map {
+            FailedBatchListItem(
+                id = it.id.toString(),
+                userId = it.userId.toString(),
+                batchUid = it.batchUid,
+                submittedAt = it.submittedAt.toString(),
+                failedIndex = it.failedIndex,
+                reason = it.reason,
+            )
+        }
+
+    suspend fun listDevices(): List<DeviceResponse> =
+        syncRepo.listDevices().map {
+            DeviceResponse(
+                deviceId = it.deviceId,
+                lastUserId = it.lastUserId?.toString(),
+                lastSeenAt = it.lastSeenAt.toString(),
+                lastLoginAt = it.lastLoginAt?.toString(),
+                appVersion = it.appVersion,
+                platform = it.platform,
+                deviceModel = it.deviceModel,
+                osVersion = it.osVersion,
+                label = it.label,
             )
         }
 
@@ -309,6 +354,7 @@ class SyncService(
         }
         return FailedBatchDetailResponse(
             id = row.id.toString(),
+            userId = row.userId.toString(),
             batchUid = row.batchUid,
             submittedAt = row.submittedAt.toString(),
             failedIndex = row.failedIndex,

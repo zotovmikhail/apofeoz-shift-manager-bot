@@ -117,6 +117,27 @@ export type TimesheetReportResponseDto = {
   rows: TimesheetDayRowDto[];
 };
 
+export type FailedBatchListItemDto = {
+  id: string;
+  userId?: string | null;
+  batchUid: string;
+  submittedAt: string;
+  failedIndex: number;
+  reason: string;
+};
+
+export type DeviceResponseDto = {
+  deviceId: string;
+  lastUserId: string | null;
+  lastSeenAt: string;
+  lastLoginAt: string | null;
+  appVersion: string | null;
+  platform: string;
+  deviceModel: string | null;
+  osVersion: string | null;
+  label: string | null;
+};
+
 export type ApiError = {
   code?: string;
   message?: string;
