@@ -215,7 +215,6 @@ fun LoginScreen(onSuccess: () -> Unit) {
                             loading = true
                             scope.launch {
                                 try {
-                                    val device = AppContainer.deviceRepository.getDeviceInfo()
                                     if (isRegister) {
                                         val t = api.register(
                                             RegisterRequestDto(
@@ -223,26 +222,11 @@ fun LoginScreen(onSuccess: () -> Unit) {
                                                 firstName = firstName.trim(),
                                                 lastName = lastName.trim(),
                                                 password = password,
-                                                deviceId = device.deviceId,
-                                                appVersion = device.appVersion,
-                                                platform = device.platform,
-                                                deviceModel = device.deviceModel,
-                                                osVersion = device.osVersion,
                                             ),
                                         )
                                         tokens.save(t.accessToken, t.refreshToken)
                                     } else {
-                                        val t = api.login(
-                                            LoginRequestDto(
-                                                login = loginValue.trim(),
-                                                password = password,
-                                                deviceId = device.deviceId,
-                                                appVersion = device.appVersion,
-                                                platform = device.platform,
-                                                deviceModel = device.deviceModel,
-                                                osVersion = device.osVersion,
-                                            ),
-                                        )
+                                        val t = api.login(LoginRequestDto(login = loginValue.trim(), password = password))
                                         tokens.save(t.accessToken, t.refreshToken)
                                     }
                                     OutboundSyncScheduler.schedule(context)
