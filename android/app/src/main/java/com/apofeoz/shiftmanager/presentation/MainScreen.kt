@@ -600,13 +600,17 @@ private fun WorkersTab(user: UserResponseDto, snackbarHostState: SnackbarHostSta
                     val localBefore = sessions.getActiveSessions()
                     val localReconciled = localBefore.filter { local ->
                         val serverSessionId = fresh[local.workerId]
+                        val hasPendingLocalStart = queue.hasPendingStartFor(local.workerId, local.sessionId)
                         when {
                             // Server confirms exactly this active session.
                             serverSessionId == local.sessionId -> true
+                            // Local offline START is still waiting for sync. Keep it as the source of truth
+                            // until the worker either accepts it or moves it to conflict/deferred state.
+                            hasPendingLocalStart -> true
                             // Server has different session for same worker -> local is stale.
                             !serverSessionId.isNullOrBlank() -> false
                             // No server active session: keep only if START is still pending in queue.
-                            else -> queue.hasPendingStartFor(local.workerId, local.sessionId)
+                            else -> hasPendingLocalStart
                         }
                     }
                     if (localReconciled.size != localBefore.size) {
@@ -645,15 +649,15 @@ private fun WorkersTab(user: UserResponseDto, snackbarHostState: SnackbarHostSta
                 val current = activeSessions.firstOrNull { it.workerId == w.id }
                 val isThisActive = current != null
                 val cachedServerSessionId = serverActiveByWorkerId[w.id]
-                val isServerEndingPending = cachedServerSessionId != null && cachedServerSessionId in pendingEndingSessionIds
+                val isServerEndingPending = !isThisActive && cachedServerSessionId != null && cachedServerSessionId in pendingEndingSessionIds
                 val isBlockedWorker = w.id in blockedWorkerIds
                 val isBlockedSession = current?.sessionId in blockedSessionIds ||
                     (cachedServerSessionId != null && cachedServerSessionId in blockedSessionIds)
                 val subtitle = when {
                     w.status != "ACTIVE" -> "Неактивен"
                     isBlockedWorker || isBlockedSession -> "Конфликт синхронизации"
-                    isServerEndingPending -> "🟢 Не работает (END в очереди на отправку)"
                     isThisActive -> "🔴 Смена идёт (нажмите, чтобы завершить)"
+                    isServerEndingPending -> "🟢 Не работает (END в очереди на отправку)"
                     else -> "🟢 Не работает (нажмите, чтобы начать смену)"
                 }
                 Card(
