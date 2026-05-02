@@ -3,6 +3,7 @@ package com.apofeoz.shiftmanager.data.repository
 import android.content.Context
 import androidx.room.withTransaction
 import com.apofeoz.shiftmanager.core.di.AppContainer
+import com.apofeoz.shiftmanager.data.local.LocalFailedBatchEntity
 import com.apofeoz.shiftmanager.data.local.OutboundBatchEntity
 import com.apofeoz.shiftmanager.data.local.ShiftDatabase
 import com.apofeoz.shiftmanager.data.remote.dto.SyncBatchRequestDto
@@ -61,21 +62,40 @@ class OutboundBatchQueueRepository(
 
     suspend fun blockedAuthCount(): Int = dao.countBlockedAuth()
 
-    suspend fun unblockAuthForCurrentUser() {
-        val ownerUserId = AppContainer.cachedUserRepository.get()?.id ?: return
-        dao.unblockAuthForOwner(ownerUserId)
+    suspend fun unblockAuthForCurrentUser(): Int {
+        val ownerUserId = AppContainer.cachedUserRepository.get()?.id ?: return 0
+        return dao.unblockAuthForOwner(ownerUserId)
     }
 
-    suspend fun dequeuePendingForWorkerAfter(afterId: Long, workerId: String): List<OutboundBatchEntity> = db.withTransaction {
-        if (workerId.isBlank()) return@withTransaction emptyList()
+    suspend fun quarantinePendingForWorkerAfter(
+        afterId: Long,
+        workerId: String,
+        httpCode: Int,
+        message: String,
+        reason: String,
+    ): Int = db.withTransaction {
+        if (workerId.isBlank()) return@withTransaction 0
         val rows = dao.listPendingAfter(afterId)
         val matched = rows.filter { row ->
             row.workerId == workerId || row.workerId.isNullOrBlank() && bodyBelongsToWorker(row.bodyJson, workerId)
         }
         if (matched.isNotEmpty()) {
+            db.localFailedDao().insertAll(
+                matched.map { row ->
+                    LocalFailedBatchEntity(
+                        httpCode = httpCode,
+                        message = message,
+                        submittedAt = row.submittedAt,
+                        bodyJson = row.bodyJson,
+                        reason = reason,
+                        failedEventType = row.eventTypes,
+                        createdAt = OffsetDateTime.now(ZoneOffset.UTC).toString(),
+                    )
+                },
+            )
             dao.deleteByIds(matched.map { it.id })
         }
-        matched
+        matched.size
     }
 
     /**

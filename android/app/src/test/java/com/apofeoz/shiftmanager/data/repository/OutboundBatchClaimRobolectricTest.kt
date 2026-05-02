@@ -5,6 +5,8 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.apofeoz.shiftmanager.core.di.AppContainer
 import com.apofeoz.shiftmanager.data.local.CachedUserRepository
+import com.apofeoz.shiftmanager.data.local.LocalFailedBatch
+import com.apofeoz.shiftmanager.data.local.LocalFailedOutboundBatchesRepository
 import com.apofeoz.shiftmanager.data.local.OutboundBatchEntity
 import com.apofeoz.shiftmanager.data.local.ShiftDatabase
 import com.apofeoz.shiftmanager.data.remote.dto.UserResponseDto
@@ -67,7 +69,7 @@ class OutboundBatchClaimRobolectricTest {
     }
 
     @Test
-    fun dequeuePendingForWorkerAfter_removesOnlyFollowingBatchesForThatWorker() = runBlocking {
+    fun quarantinePendingForWorkerAfter_movesOnlyFollowingBatchesForThatWorkerToFailed() = runBlocking {
         val dao = db.outboundDao()
         val currentId = dao.insert(
             OutboundBatchEntity(
@@ -106,11 +108,40 @@ class OutboundBatchClaimRobolectricTest {
             ),
         )
 
-        val removed = repo.dequeuePendingForWorkerAfter(currentId, "worker-a")
+        val moved = repo.quarantinePendingForWorkerAfter(
+            afterId = currentId,
+            workerId = "worker-a",
+            httpCode = 409,
+            message = "deferred",
+            reason = "blocked_by_previous_conflict",
+        )
 
-        assertEquals(listOf("a2-end", "a3-start"), removed.map { it.batchUid })
+        assertEquals(2, moved)
         val remaining = dao.listPendingAfter(currentId).map { it.batchUid }
         assertEquals(listOf("b1-start"), remaining)
-        assertTrue(removed.all { it.workerId == "worker-a" })
+        val failedBodies = db.localFailedDao().list().map { it.bodyJson }
+        assertEquals(listOf("{}", "{}"), failedBodies)
+        assertTrue(db.localFailedDao().list().all { it.reason == "blocked_by_previous_conflict" })
+    }
+
+    @Test
+    fun localFailedRepository_keepsMoreThanLegacyDataStoreCap() = runBlocking {
+        val failed = LocalFailedOutboundBatchesRepository(
+            ApplicationProvider.getApplicationContext(),
+            db,
+        )
+
+        repeat(60) { index ->
+            failed.add(
+                LocalFailedBatch(
+                    httpCode = 409,
+                    message = "failed-$index",
+                    submittedAt = "t-$index",
+                    bodyJson = "{}",
+                ),
+            )
+        }
+
+        assertEquals(60, failed.list().size)
     }
 }

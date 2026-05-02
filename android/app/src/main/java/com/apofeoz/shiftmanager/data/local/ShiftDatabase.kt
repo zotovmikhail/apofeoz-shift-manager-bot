@@ -5,9 +5,14 @@ import androidx.room.migration.Migration
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [OutboundBatchEntity::class], version = 3, exportSchema = false)
+@Database(
+    entities = [OutboundBatchEntity::class, LocalFailedBatchEntity::class],
+    version = 4,
+    exportSchema = false,
+)
 abstract class ShiftDatabase : RoomDatabase() {
     abstract fun outboundDao(): OutboundBatchDao
+    abstract fun localFailedDao(): LocalFailedBatchDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -27,6 +32,26 @@ abstract class ShiftDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE outbound_batches ADD COLUMN workerId TEXT")
                 db.execSQL("ALTER TABLE outbound_batches ADD COLUMN sessionId TEXT")
                 db.execSQL("ALTER TABLE outbound_batches ADD COLUMN eventTypes TEXT")
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS local_failed_batches (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        httpCode INTEGER NOT NULL,
+                        message TEXT NOT NULL,
+                        submittedAt TEXT NOT NULL,
+                        bodyJson TEXT NOT NULL,
+                        failedIndex INTEGER,
+                        reason TEXT,
+                        failedEventType TEXT,
+                        createdAt TEXT NOT NULL
+                    )
+                    """.trimIndent(),
+                )
             }
         }
     }

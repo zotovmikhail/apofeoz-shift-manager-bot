@@ -9,6 +9,8 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.UUID
 
 private val Context.localFailedBatchesDataStore: DataStore<Preferences> by preferencesDataStore("local_failed_batches")
@@ -28,39 +30,75 @@ data class LocalFailedBatch(
 @Serializable
 private data class LocalFailedBatchState(val items: List<LocalFailedBatch> = emptyList())
 
-class LocalFailedOutboundBatchesRepository(private val context: Context) {
+class LocalFailedOutboundBatchesRepository(
+    private val context: Context,
+    private val db: ShiftDatabase,
+) {
     private val store = context.localFailedBatchesDataStore
     private val key = stringPreferencesKey("failed")
     private val json = Json { ignoreUnknownKeys = true }
+    private val dao get() = db.localFailedDao()
 
     suspend fun list(): List<LocalFailedBatch> {
-        val prefs = store.data.first()
-        val raw = prefs[key] ?: return emptyList()
-        return runCatching { json.decodeFromString(LocalFailedBatchState.serializer(), raw).items }
-            .getOrElse { emptyList() }
+        migrateLegacyIfNeeded()
+        return dao.list().map { it.toModel() }
     }
 
     suspend fun add(item: LocalFailedBatch) {
-        val cur = list()
-        val capped = (listOf(item) + cur).take(50)
-        store.edit { it[key] = json.encodeToString(LocalFailedBatchState.serializer(), LocalFailedBatchState(capped)) }
+        migrateLegacyIfNeeded()
+        dao.insert(item.toEntity())
+    }
+
+    suspend fun addAll(items: List<LocalFailedBatch>) {
+        if (items.isEmpty()) return
+        migrateLegacyIfNeeded()
+        dao.insertAll(items.map { it.toEntity() })
     }
 
     suspend fun remove(id: String) {
         if (id.isBlank()) return
-        val cur = list()
-        val next = cur.filterNot { it.id == id }
-        store.edit { prefs ->
-            if (next.isEmpty()) {
-                prefs.remove(key)
-            } else {
-                prefs[key] = json.encodeToString(LocalFailedBatchState.serializer(), LocalFailedBatchState(next))
-            }
-        }
+        migrateLegacyIfNeeded()
+        dao.deleteById(id)
     }
 
     suspend fun clear() {
+        dao.clear()
         store.edit { it.remove(key) }
     }
+
+    private suspend fun migrateLegacyIfNeeded() {
+        if (dao.count() > 0) return
+        val prefs = store.data.first()
+        val raw = prefs[key] ?: return
+        val legacy = runCatching { json.decodeFromString(LocalFailedBatchState.serializer(), raw).items }
+            .getOrElse { emptyList() }
+        if (legacy.isNotEmpty()) {
+            dao.insertAll(legacy.map { it.toEntity() })
+        }
+        store.edit { it.remove(key) }
+    }
+
+    private fun LocalFailedBatch.toEntity(): LocalFailedBatchEntity = LocalFailedBatchEntity(
+        id = id,
+        httpCode = httpCode,
+        message = message,
+        submittedAt = submittedAt,
+        bodyJson = bodyJson,
+        failedIndex = failedIndex,
+        reason = reason,
+        failedEventType = failedEventType,
+        createdAt = OffsetDateTime.now(ZoneOffset.UTC).toString(),
+    )
+
+    private fun LocalFailedBatchEntity.toModel(): LocalFailedBatch = LocalFailedBatch(
+        id = id,
+        httpCode = httpCode,
+        message = message,
+        submittedAt = submittedAt,
+        bodyJson = bodyJson,
+        failedIndex = failedIndex,
+        reason = reason,
+        failedEventType = failedEventType,
+    )
 }
 

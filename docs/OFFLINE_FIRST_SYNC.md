@@ -11,7 +11,9 @@
 ## Android policy
 
 - The last successful `/users/me` profile is stored in `CachedUserRepository`.
+- The last successful worker list is stored in `CachedWorkersRepository` and scoped by `ownerUserId`.
 - On app start, if `/users/me` is unavailable because of network failure, `AppRoot` opens the cached user.
+- If auth was explicitly rejected by `401/403`, `AuthStateRepository` blocks cached-user auto-entry until the next successful login.
 - `TokenRefreshAuthenticator` clears tokens only when refresh returns `401` or `403`.
 - Refresh network failures return control to the caller without clearing tokens.
 - `sessionExpired` clears auth tokens, but does not clear local active sessions or outbound work.
@@ -44,6 +46,8 @@ Current states:
 The worker claims only rows belonging to the current cached user, plus legacy rows without owner.
 `workerId`, `sessionId`, and `eventTypes` are denormalized queue metadata. They make it possible to quarantine later work for one worker without parsing the whole JSON queue and without blocking unrelated workers.
 
+Local failed/deferred batches are stored in Room table `local_failed_batches`, not in capped DataStore. This avoids losing long offline histories and lets queue quarantine be written transactionally.
+
 ## Conflict handling
 
 `409 Conflict` means a business conflict. It is not retried automatically.
@@ -53,7 +57,7 @@ On `409`, Android:
 - stores a local failed batch with `failedIndex`, `reason`, and `failedEventType`;
 - removes the row from the automatic queue;
 - blocks the affected worker/session in UI;
-- moves later pending rows for the same `workerId` from the automatic queue into local failed/deferred storage with `blocked_by_previous_conflict`;
+- transactionally moves later pending rows for the same `workerId` from the automatic queue into local failed/deferred storage with `blocked_by_previous_conflict`;
 - continues syncing pending rows of other workers.
 
 On fatal `400` or `403`, Android applies the same worker-level quarantine, but marks deferred rows with `blocked_by_previous_error`.

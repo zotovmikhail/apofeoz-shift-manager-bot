@@ -117,17 +117,15 @@ class OutboundSyncWorker(
                         }
                     }
                     val details = parseError(e)
-                    runCatching {
-                        failedLocal.add(
-                            LocalFailedBatch(
-                                httpCode = e.code(),
-                                message = e.message(),
-                                submittedAt = row.submittedAt,
-                                bodyJson = row.bodyJson,
-                                reason = details?.message ?: e.message(),
-                            ),
-                        )
-                    }
+                    failedLocal.add(
+                        LocalFailedBatch(
+                            httpCode = e.code(),
+                            message = e.message(),
+                            submittedAt = row.submittedAt,
+                            bodyJson = row.bodyJson,
+                            reason = details?.message ?: e.message(),
+                        ),
+                    )
                     quarantinePendingWorkerBatches(
                         afterId = row.id,
                         workerId = failedWorkerId,
@@ -179,19 +177,13 @@ class OutboundSyncWorker(
     ) {
         if (workerId.isNullOrBlank()) return
         AppContainer.pendingSessionActions.addBlockedWorker(workerId)
-        val rows = AppContainer.batchQueue.dequeuePendingForWorkerAfter(afterId, workerId)
-        rows.forEach { deferred ->
-            AppContainer.localFailedBatches.add(
-                LocalFailedBatch(
-                    httpCode = httpCode,
-                    message = message,
-                    submittedAt = deferred.submittedAt,
-                    bodyJson = deferred.bodyJson,
-                    reason = reason,
-                    failedEventType = deferred.eventTypes,
-                ),
-            )
-        }
+        AppContainer.batchQueue.quarantinePendingForWorkerAfter(
+            afterId = afterId,
+            workerId = workerId,
+            httpCode = httpCode,
+            message = message,
+            reason = reason,
+        )
     }
 
     private suspend fun workerIdForEvents(events: List<com.apofeoz.shiftmanager.data.remote.dto.SyncEventDto>): String? {

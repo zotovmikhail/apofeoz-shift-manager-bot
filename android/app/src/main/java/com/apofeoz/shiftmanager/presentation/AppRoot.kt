@@ -14,15 +14,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import com.apofeoz.shiftmanager.core.di.AppContainer
 import com.apofeoz.shiftmanager.data.local.toUserResponseDto
 import com.apofeoz.shiftmanager.data.remote.dto.UserResponseDto
+import com.apofeoz.shiftmanager.work.OutboundSyncScheduler
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
 
 @Composable
 fun AppRoot() {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var screen by remember { mutableStateOf<String?>(null) }
     var user by remember { mutableStateOf<UserResponseDto?>(null) }
@@ -30,20 +33,23 @@ fun AppRoot() {
     LaunchedEffect(Unit) {
         val token = AppContainer.tokenRepository.getAccessToken()
         val cached = AppContainer.cachedUserRepository.get()
+        val authRejected = AppContainer.authStateRepository.isAuthRejected()
         if (token.isNullOrBlank()) {
-            user = cached?.toUserResponseDto()
+            user = if (authRejected) null else cached?.toUserResponseDto()
             screen = if (user != null) "main" else "login"
         } else {
             try {
                 val me = AppContainer.api.me()
+                AppContainer.authStateRepository.setAuthRejected(false)
                 AppContainer.cachedUserRepository.save(me)
                 user = me
                 screen = "main"
             } catch (e: HttpException) {
                 if (e.code() == 401 || e.code() == 403) {
                     AppContainer.tokenRepository.clear()
-                    user = cached?.toUserResponseDto()
-                    screen = if (user != null) "main" else "login"
+                    AppContainer.authStateRepository.setAuthRejected(true)
+                    user = null
+                    screen = "login"
                 } else {
                     user = cached?.toUserResponseDto()
                     screen = if (user != null) "main" else "login"
@@ -61,6 +67,7 @@ fun AppRoot() {
     LaunchedEffect(Unit) {
         AppContainer.sessionExpired.collect {
             AppContainer.tokenRepository.clear()
+            AppContainer.authStateRepository.setAuthRejected(true)
             user = null
             screen = "login"
         }
@@ -75,8 +82,11 @@ fun AppRoot() {
                 scope.launch {
                     user = runCatching { AppContainer.api.me() }
                         .onSuccess {
+                            AppContainer.authStateRepository.setAuthRejected(false)
                             AppContainer.cachedUserRepository.save(it)
-                            AppContainer.batchQueue.unblockAuthForCurrentUser()
+                            if (AppContainer.batchQueue.unblockAuthForCurrentUser() > 0) {
+                                OutboundSyncScheduler.schedule(context)
+                            }
                         }
                         .getOrNull()
                     screen = if (user != null) "main" else "login"

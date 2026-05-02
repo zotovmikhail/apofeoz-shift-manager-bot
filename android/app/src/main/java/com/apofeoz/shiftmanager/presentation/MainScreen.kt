@@ -380,24 +380,29 @@ private fun ProfileTab(user: UserResponseDto, isOnline: Boolean, onLoggedOut: ()
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     localFailed.forEach { item ->
+                        val isDeferred = item.reason?.startsWith("blocked_by_previous_") == true
                         Card(modifier = Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text("HTTP ${item.httpCode}: ${item.message}", style = MaterialTheme.typography.bodyMedium)
+                                item.reason?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                                 Text("submittedAt: ${item.submittedAt}", style = MaterialTheme.typography.bodySmall)
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Button(onClick = {
-                                        scope.launch {
-                                            localFailedMsg = null
-                                            runCatching {
-                                                val dto = json.decodeFromString(SyncBatchRequestDto.serializer(), item.bodyJson)
-                                                queue.enqueue(dto)
-                                                failedLocal.remove(item.id)
-                                                localFailed = failedLocal.list()
-                                            }.onFailure { e ->
-                                                localFailedMsg = e.message ?: e.toString()
+                                    Button(
+                                        enabled = !isDeferred,
+                                        onClick = {
+                                            scope.launch {
+                                                localFailedMsg = null
+                                                runCatching {
+                                                    val dto = json.decodeFromString(SyncBatchRequestDto.serializer(), item.bodyJson)
+                                                    queue.enqueue(dto)
+                                                    failedLocal.remove(item.id)
+                                                    localFailed = failedLocal.list()
+                                                }.onFailure { e ->
+                                                    localFailedMsg = e.message ?: e.toString()
+                                                }
                                             }
-                                        }
-                                    }) { Text("Переотправить") }
+                                        },
+                                    ) { Text(if (isDeferred) "Отложено" else "Переотправить") }
                                     TextButton(onClick = {
                                         scope.launch {
                                             localFailedMsg = null
@@ -457,7 +462,9 @@ private fun ProfileTab(user: UserResponseDto, isOnline: Boolean, onLoggedOut: ()
                     }
                 }
                 AppContainer.tokenRepository.clear()
+                AppContainer.authStateRepository.setAuthRejected(false)
                 AppContainer.cachedUserRepository.clear()
+                AppContainer.cachedWorkersRepository.clear()
                 onLoggedOut()
             }
         }) { Text("Выйти") }
@@ -562,7 +569,18 @@ private fun WorkersTab(user: UserResponseDto, snackbarHostState: SnackbarHostSta
     fun load() {
         scope.launch {
             try {
-                workers = AppContainer.api.workers()
+                val ownerUserId = AppContainer.cachedUserRepository.get()?.id
+                val cachedWorkers = AppContainer.cachedWorkersRepository.get()
+                if (cachedWorkers.ownerUserId == ownerUserId && cachedWorkers.items.isNotEmpty()) {
+                    workers = cachedWorkers.items
+                }
+                val remoteWorkers = runCatching { AppContainer.api.workers() }.getOrNull()
+                if (remoteWorkers != null) {
+                    workers = remoteWorkers
+                    AppContainer.cachedWorkersRepository.save(ownerUserId, remoteWorkers)
+                } else if (workers.isEmpty()) {
+                    error = "Нет сети и нет сохранённого списка рабочих"
+                }
                 pendingEndingSessionIds = pendingActions.getEndingSessionIds()
                 blockedWorkerIds = pendingActions.getBlockedWorkerIds()
                 blockedSessionIds = pendingActions.getBlockedSessionIds()
@@ -596,7 +614,9 @@ private fun WorkersTab(user: UserResponseDto, snackbarHostState: SnackbarHostSta
                     }
                     activeSessions = mergedWithServer(localReconciled)
                 }
-                error = null
+                if (remoteWorkers != null || workers.isNotEmpty()) {
+                    error = null
+                }
             } catch (e: Exception) {
                 error = e.message
             }
@@ -784,7 +804,14 @@ private fun SessionsTab() {
     val queue = AppContainer.batchQueue
 
     LaunchedEffect(Unit) {
-        workers = runCatching { AppContainer.api.workers() }.getOrElse { emptyList() }
+        val ownerUserId = AppContainer.cachedUserRepository.get()?.id
+        val cached = AppContainer.cachedWorkersRepository.get()
+        workers = if (cached.ownerUserId == ownerUserId) cached.items else emptyList()
+        runCatching { AppContainer.api.workers() }
+            .onSuccess {
+                workers = it
+                AppContainer.cachedWorkersRepository.save(ownerUserId, it)
+            }
         active = sessions.getActive()
         pending = queue.pendingCount()
     }
