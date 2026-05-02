@@ -7,6 +7,7 @@ import com.apofeoz.backend.api.LoginRequest
 import com.apofeoz.backend.api.RegisterRequest
 import com.apofeoz.backend.api.TokenResponse
 import com.apofeoz.backend.data.RefreshTokenRepository
+import com.apofeoz.backend.data.SyncBatchRepository
 import com.apofeoz.backend.data.UserRepository
 import com.apofeoz.backend.domain.Role
 import com.apofeoz.backend.domain.UserStatus
@@ -21,6 +22,7 @@ class AuthService(
     private val users: UserRepository,
     private val refreshTokens: RefreshTokenRepository,
     private val jwt: JwtService,
+    private val syncRepo: SyncBatchRepository,
 ) {
 
     suspend fun register(req: RegisterRequest): TokenResponse {
@@ -41,6 +43,7 @@ class AuthService(
         val id = UUID.randomUUID()
         val hash = BCrypt.hashpw(req.password, BCrypt.gensalt(12))
         users.insert(id, email, phone, req.firstName.trim(), req.lastName.trim(), hash, Role.USER, UserStatus.ACTIVE)
+        recordLoginDevice(id, req.deviceId, req.appVersion, req.platform, req.deviceModel, req.osVersion)
         return issueTokens(id, Role.USER.name)
     }
 
@@ -56,6 +59,7 @@ class AuthService(
         }
         val ok = BCrypt.checkpw(req.password, u.passwordHash)
         if (!ok) throw ApiException(HttpStatusCode.Unauthorized, "invalid_credentials", "Invalid login or password")
+        recordLoginDevice(u.id, req.deviceId, req.appVersion, req.platform, req.deviceModel, req.osVersion)
         return issueTokens(u.id, u.role.name)
     }
 
@@ -85,6 +89,25 @@ class AuthService(
         val exp = OffsetDateTime.now(ZoneOffset.UTC).plusDays(cfg.refreshTokenDays)
         refreshTokens.insert(userId, hash, exp)
         return TokenResponse(accessToken = access, refreshToken = raw)
+    }
+
+    private suspend fun recordLoginDevice(
+        userId: UUID,
+        deviceId: String?,
+        appVersion: String?,
+        platform: String?,
+        deviceModel: String?,
+        osVersion: String?,
+    ) {
+        syncRepo.recordDeviceSeen(
+            userId = userId,
+            deviceId = deviceId,
+            appVersion = appVersion,
+            platform = platform,
+            deviceModel = deviceModel,
+            osVersion = osVersion,
+            loginSeen = true,
+        )
     }
 
     private fun conflict(code: String): Nothing =

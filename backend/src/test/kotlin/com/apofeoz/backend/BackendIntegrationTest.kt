@@ -158,9 +158,20 @@ class BackendIntegrationTest {
             }
             assertEquals(HttpStatusCode.OK, patch.status, patch.bodyAsText())
 
+            val loginDeviceId = "login-device-${UUID.randomUUID()}"
             val foremanLogin = c.post("/api/v1/auth/login") {
                 contentType(ContentType.Application.Json)
-                setBody(LoginRequest(login = foremanEmail, password = "password123"))
+                setBody(
+                    LoginRequest(
+                        login = foremanEmail,
+                        password = "password123",
+                        deviceId = loginDeviceId,
+                        appVersion = "0.1.login",
+                        platform = "android",
+                        deviceModel = "Login Device",
+                        osVersion = "16",
+                    ),
+                )
             }
             val foremanTok = foremanLogin.body<TokenResponse>()
 
@@ -252,6 +263,11 @@ class BackendIntegrationTest {
             assertEquals(foremanUserId, savedDevice.lastUserId)
             assertEquals("0.1.test", savedDevice.appVersion)
             assertEquals("Test Device", savedDevice.deviceModel)
+            val loginDevice = deviceItems.single { it.deviceId == loginDeviceId }
+            assertEquals(foremanUserId, loginDevice.lastUserId)
+            assertEquals("0.1.login", loginDevice.appVersion)
+            assertEquals("Login Device", loginDevice.deviceModel)
+            assertTrue(loginDevice.lastLoginAt != null, "lastLoginAt should be set on mobile login")
         }
     }
 

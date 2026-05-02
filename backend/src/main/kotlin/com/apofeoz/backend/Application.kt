@@ -24,7 +24,7 @@ fun Application.module() {
     val syncRepo = SyncBatchRepository()
     val jwtService = JwtService(cfg)
 
-    val authService = AuthService(cfg, userRepo, refreshRepo, jwtService)
+    val authService = AuthService(cfg, userRepo, refreshRepo, jwtService, syncRepo)
     val userService = UserService(userRepo, workerRepo, refreshRepo)
     val workerService = WorkerService(userRepo, workerRepo, sessionRepo)
     val sessionService = SessionService(sessionRepo)

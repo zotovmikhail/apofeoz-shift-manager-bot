@@ -10,6 +10,11 @@ export type Tokens = {
 export type LoginRequest = {
   login: string;
   password: string;
+  deviceId?: string;
+  appVersion?: string;
+  platform?: string;
+  deviceModel?: string;
+  osVersion?: string;
 };
 
 export type RegisterRequest = {
@@ -19,6 +24,11 @@ export type RegisterRequest = {
   firstName: string;
   lastName: string;
   password: string;
+  deviceId?: string;
+  appVersion?: string;
+  platform?: string;
+  deviceModel?: string;
+  osVersion?: string;
 };
 
 export type UserResponseDto = {

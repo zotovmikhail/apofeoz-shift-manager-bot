@@ -15,10 +15,23 @@ data class RegisterRequest(
     val firstName: String,
     val lastName: String,
     val password: String,
+    val deviceId: String? = null,
+    val appVersion: String? = null,
+    val platform: String? = null,
+    val deviceModel: String? = null,
+    val osVersion: String? = null,
 )
 
 @Serializable
-data class LoginRequest(val login: String, val password: String)
+data class LoginRequest(
+    val login: String,
+    val password: String,
+    val deviceId: String? = null,
+    val appVersion: String? = null,
+    val platform: String? = null,
+    val deviceModel: String? = null,
+    val osVersion: String? = null,
+)
 
 @Serializable
 data class TokenResponse(val accessToken: String, val refreshToken: String, val tokenType: String = "Bearer")
