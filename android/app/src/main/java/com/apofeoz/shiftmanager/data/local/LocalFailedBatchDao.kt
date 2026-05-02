@@ -13,7 +13,7 @@ interface LocalFailedBatchDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(items: List<LocalFailedBatchEntity>)
 
-    @Query("SELECT * FROM local_failed_batches ORDER BY createdAt DESC")
+    @Query("SELECT * FROM local_failed_batches ORDER BY submittedAt ASC, createdAt ASC")
     suspend fun list(): List<LocalFailedBatchEntity>
 
     @Query("DELETE FROM local_failed_batches WHERE id = :id")
