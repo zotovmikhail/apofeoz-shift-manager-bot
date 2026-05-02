@@ -365,7 +365,7 @@ private fun ProfileTab(user: UserResponseDto, isOnline: Boolean, onLoggedOut: ()
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    "Локальные ошибки отправки (400/403)",
+                    "Локальные ошибки отправки (400/403/409)",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f),
                 )
@@ -469,7 +469,7 @@ private fun ProfileTab(user: UserResponseDto, isOnline: Boolean, onLoggedOut: ()
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        "Будут удалены все сохранённые на этом устройстве записи об ответах сервера с кодами 400 и 403. Восстановить список будет нельзя.",
+                        "Будут удалены все сохранённые на этом устройстве записи об ответах сервера с кодами 400, 403 и 409. Восстановить список будет нельзя.",
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Text(

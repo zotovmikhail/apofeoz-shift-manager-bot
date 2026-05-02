@@ -116,13 +116,13 @@ fun Application.configureRouting(
                 get("/sync/failed-batches/{id}") {
                     val p = call.jwtPrincipal()
                     val id = UUID.fromString(call.parameters["id"]!!)
-                    call.respond(syncService.getFailedDetail(p.userId, id))
+                    call.respond(syncService.getFailedDetail(p.userId, Role.valueOf(p.role), id))
                 }
 
                 delete("/sync/failed-batches/{id}") {
                     val p = call.jwtPrincipal()
                     val id = UUID.fromString(call.parameters["id"]!!)
-                    val ok = syncService.deleteFailed(p.userId, id)
+                    val ok = syncService.deleteFailed(p.userId, Role.valueOf(p.role), id)
                     if (ok) call.respond(HttpStatusCode.NoContent)
                     else call.respond(HttpStatusCode.NotFound, ErrorResponse("not_found", "Record not found"))
                 }

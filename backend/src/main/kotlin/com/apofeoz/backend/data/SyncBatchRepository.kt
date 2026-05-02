@@ -165,10 +165,28 @@ class SyncBatchRepository {
         } > 0
     }
 
+    suspend fun deleteFailedById(id: UUID): Boolean = newSuspendedTransaction(Dispatchers.IO) {
+        FailedSyncBatches.deleteWhere { FailedSyncBatches.id eq id } > 0
+    }
+
     suspend fun findFailedById(id: UUID, userId: UUID): FailedBatchRow? = newSuspendedTransaction(Dispatchers.IO) {
         FailedSyncBatches.selectAll().where {
             (FailedSyncBatches.id eq id) and (FailedSyncBatches.userId eq EntityID(userId, Users))
         }.map {
+            FailedBatchRow(
+                id = it[FailedSyncBatches.id].value,
+                userId = it[FailedSyncBatches.userId].value,
+                batchUid = it[FailedSyncBatches.batchUid],
+                submittedAt = it[FailedSyncBatches.submittedAt],
+                failedIndex = it[FailedSyncBatches.failedIndex],
+                reason = it[FailedSyncBatches.reason],
+                eventsSnapshot = it[FailedSyncBatches.eventsSnapshot],
+            )
+        }.singleOrNull()
+    }
+
+    suspend fun findFailedById(id: UUID): FailedBatchRow? = newSuspendedTransaction(Dispatchers.IO) {
+        FailedSyncBatches.selectAll().where { FailedSyncBatches.id eq id }.map {
             FailedBatchRow(
                 id = it[FailedSyncBatches.id].value,
                 userId = it[FailedSyncBatches.userId].value,

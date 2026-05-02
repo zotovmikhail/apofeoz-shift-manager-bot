@@ -60,7 +60,7 @@ object AppContainer {
         cachedUserRepository = CachedUserRepository(app)
         deviceRepository = DeviceRepository(app)
         database = Room.databaseBuilder(app, ShiftDatabase::class.java, "shift.db")
-            .addMigrations(ShiftDatabase.MIGRATION_1_2)
+            .addMigrations(ShiftDatabase.MIGRATION_1_2, ShiftDatabase.MIGRATION_2_3)
             .build()
         val baseUrl = BuildConfig.API_BASE_URL.trimEnd('/') + "/"
         api = ApiClient.create(baseUrl, tokenRepository, jsonFormat, BuildConfig.DEBUG)

@@ -23,6 +23,16 @@ interface OutboundBatchDao {
     suspend fun getById(id: Long): OutboundBatchEntity?
 
     @Query(
+        "SELECT * FROM outbound_batches " +
+            "WHERE id > :afterId AND state = :pending " +
+            "ORDER BY id ASC",
+    )
+    suspend fun listPendingAfter(
+        afterId: Long,
+        pending: String = OutboundBatchEntity.STATE_PENDING,
+    ): List<OutboundBatchEntity>
+
+    @Query(
         "UPDATE outbound_batches SET state = :inFlight, attemptCount = attemptCount + 1, lastAttemptAt = :attemptedAt " +
             "WHERE id = :id AND state = :pending",
     )
@@ -58,6 +68,9 @@ interface OutboundBatchDao {
 
     @Query("DELETE FROM outbound_batches WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query("DELETE FROM outbound_batches WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
 
     @Query("SELECT COUNT(*) FROM outbound_batches WHERE state = :pending")
     suspend fun countPending(pending: String = OutboundBatchEntity.STATE_PENDING): Int

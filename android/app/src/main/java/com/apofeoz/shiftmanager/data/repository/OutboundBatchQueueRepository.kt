@@ -9,6 +9,7 @@ import com.apofeoz.shiftmanager.data.remote.dto.SyncBatchRequestDto
 import com.apofeoz.shiftmanager.work.OutboundSyncScheduler
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.time.OffsetDateTime
@@ -31,6 +32,7 @@ class OutboundBatchQueueRepository(
     suspend fun enqueue(batch: SyncBatchRequestDto) {
         val cachedUser = AppContainer.cachedUserRepository.get()
         val device = AppContainer.deviceRepository.getDeviceInfo()
+        val metadata = extractMetadata(batch)
         val enriched = batch.copy(
             deviceId = device.deviceId,
             appVersion = device.appVersion,
@@ -45,6 +47,9 @@ class OutboundBatchQueueRepository(
                 submittedAt = enriched.submittedAt,
                 bodyJson = body,
                 ownerUserId = cachedUser?.id,
+                workerId = metadata.workerId,
+                sessionId = metadata.sessionId,
+                eventTypes = metadata.eventTypes,
                 deviceId = device.deviceId,
                 appVersion = device.appVersion,
             ),
@@ -59,6 +64,18 @@ class OutboundBatchQueueRepository(
     suspend fun unblockAuthForCurrentUser() {
         val ownerUserId = AppContainer.cachedUserRepository.get()?.id ?: return
         dao.unblockAuthForOwner(ownerUserId)
+    }
+
+    suspend fun dequeuePendingForWorkerAfter(afterId: Long, workerId: String): List<OutboundBatchEntity> = db.withTransaction {
+        if (workerId.isBlank()) return@withTransaction emptyList()
+        val rows = dao.listPendingAfter(afterId)
+        val matched = rows.filter { row ->
+            row.workerId == workerId || row.workerId.isNullOrBlank() && bodyBelongsToWorker(row.bodyJson, workerId)
+        }
+        if (matched.isNotEmpty()) {
+            dao.deleteByIds(matched.map { it.id })
+        }
+        matched
     }
 
     /**
@@ -81,4 +98,43 @@ class OutboundBatchQueueRepository(
         }
         return false
     }
+
+    private suspend fun extractMetadata(batch: SyncBatchRequestDto): BatchMetadata {
+        val eventTypes = batch.events.joinToString(",") { it.type }.ifBlank { null }
+        val workerIds = batch.events.mapNotNull { eventWorkerId(it.type, it.payload) }.distinct()
+        val sessionIds = batch.events.mapNotNull { eventSessionId(it.payload) }.distinct()
+        val resolvedWorkerId = workerIds.singleOrNull()
+            ?: sessionIds.firstNotNullOfOrNull { sessionId -> workerIdForSession(sessionId) }
+        return BatchMetadata(
+            workerId = resolvedWorkerId,
+            sessionId = sessionIds.singleOrNull(),
+            eventTypes = eventTypes,
+        )
+    }
+
+    private suspend fun workerIdForSession(sessionId: String): String? {
+        val local = AppContainer.sessionStateRepository.getActiveSessions().firstOrNull { it.sessionId == sessionId }?.workerId
+        if (!local.isNullOrBlank()) return local
+        return AppContainer.activeSessionsCache.get().byWorkerId.entries.firstOrNull { it.value == sessionId }?.key
+    }
+
+    private fun bodyBelongsToWorker(bodyJson: String, workerId: String): Boolean {
+        val dto = runCatching { json.decodeFromString(SyncBatchRequestDto.serializer(), bodyJson) }.getOrNull() ?: return false
+        return dto.events.any { eventWorkerId(it.type, it.payload) == workerId }
+    }
+
+    private fun eventWorkerId(type: String, payload: JsonElement): String? =
+        when (type) {
+            "START_SESSION" -> runCatching { payload.jsonObject["workerId"]?.jsonPrimitive?.content }.getOrNull()
+            else -> null
+        }?.takeIf { it.isNotBlank() }
+
+    private fun eventSessionId(payload: JsonElement): String? =
+        runCatching { payload.jsonObject["sessionId"]?.jsonPrimitive?.content }.getOrNull()?.takeIf { it.isNotBlank() }
+
+    private data class BatchMetadata(
+        val workerId: String?,
+        val sessionId: String?,
+        val eventTypes: String?,
+    )
 }

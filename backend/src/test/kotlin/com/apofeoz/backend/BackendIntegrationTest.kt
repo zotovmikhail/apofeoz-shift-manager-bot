@@ -342,8 +342,15 @@ class BackendIntegrationTest {
             assertEquals(HttpStatusCode.OK, detail.status)
             assertTrue(detail.body<FailedBatchDetailResponse>().eventsSnapshot.size >= 2)
 
+            val adminFailed = c.get("/api/v1/sync/failed-batches") { bearerAuth(adminTok.accessToken) }
+            assertEquals(HttpStatusCode.OK, adminFailed.status)
+            assertTrue(adminFailed.body<List<com.apofeoz.backend.api.FailedBatchListItem>>().any { it.batchUid == badBatch.batchUid })
+            val adminDetail = c.get("/api/v1/sync/failed-batches/$failedId") { bearerAuth(adminTok.accessToken) }
+            assertEquals(HttpStatusCode.OK, adminDetail.status)
+            assertEquals(failedId, adminDetail.body<FailedBatchDetailResponse>().id)
+
             val del = c.delete("/api/v1/sync/failed-batches/$failedId") {
-                bearerAuth(foremanTok.accessToken)
+                bearerAuth(adminTok.accessToken)
             }
             assertEquals(HttpStatusCode.NoContent, del.status)
         }

@@ -145,9 +145,10 @@ backend/src/main/kotlin/com/apofeoz/backend/
 | PATCH | `/api/v1/users/{id}` | владелец (профиль) / ADMIN |
 | GET/POST/PATCH | `/api/v1/workers` | FOREMAN / ADMIN |
 | POST | `/api/v1/sync/batch` | FOREMAN (активный) |
-| GET | `/api/v1/sync/failed-batches` | JWT (свои записи) |
-| GET | `/api/v1/sync/failed-batches/{id}` | JWT (снимок `events[]` для экрана правки) |
-| DELETE | `/api/v1/sync/failed-batches/{id}` | JWT |
+| GET | `/api/v1/sync/failed-batches` | JWT (ADMIN видит все записи, остальные только свои) |
+| GET | `/api/v1/sync/failed-batches/{id}` | JWT (ADMIN видит любую запись, остальные только свои; снимок `events[]` для экрана правки) |
+| DELETE | `/api/v1/sync/failed-batches/{id}` | JWT (ADMIN может удалить любую запись, остальные только свои) |
+| GET | `/api/v1/devices` | ADMIN, диагностика мобильных устройств sync |
 | GET | `/api/v1/reports/hours-by-worker-previous-day?date=` | ADMIN |
 | GET | `/api/v1/reports/hours-by-worker-range?from=&to=` | ADMIN |
 | GET | `/api/v1/reports/timesheet.xlsx?from=&to=` | ADMIN (скачивание Excel-табеля) |

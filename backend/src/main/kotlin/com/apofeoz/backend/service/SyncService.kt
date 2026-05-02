@@ -341,8 +341,12 @@ class SyncService(
             )
         }
 
-    suspend fun getFailedDetail(userId: UUID, id: UUID): FailedBatchDetailResponse {
-        val row = syncRepo.findFailedById(id, userId)
+    suspend fun getFailedDetail(userId: UUID, role: com.apofeoz.backend.domain.Role, id: UUID): FailedBatchDetailResponse {
+        val row = if (role == com.apofeoz.backend.domain.Role.ADMIN) {
+            syncRepo.findFailedById(id)
+        } else {
+            syncRepo.findFailedById(id, userId)
+        }
             ?: throw ApiException(HttpStatusCode.NotFound, "not_found", "Failed batch not found")
         val eventsJson = try {
             when (val el = Json.parseToJsonElement(row.eventsSnapshot)) {
@@ -363,7 +367,9 @@ class SyncService(
         )
     }
 
-    suspend fun deleteFailed(userId: UUID, id: UUID): Boolean = syncRepo.deleteFailed(id, userId)
+    suspend fun deleteFailed(userId: UUID, role: com.apofeoz.backend.domain.Role, id: UUID): Boolean =
+        if (role == com.apofeoz.backend.domain.Role.ADMIN) syncRepo.deleteFailedById(id)
+        else syncRepo.deleteFailed(id, userId)
 }
 
 private class SyncApplyException(val index: Int, val reason: String, val eventType: String?) : Exception(reason)

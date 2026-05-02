@@ -11,6 +11,9 @@ data class OutboundBatchEntity(
     /** Полное тело `SyncBatchRequest` в JSON */
     val bodyJson: String,
     val ownerUserId: String? = null,
+    val workerId: String? = null,
+    val sessionId: String? = null,
+    val eventTypes: String? = null,
     val deviceId: String? = null,
     val appVersion: String? = null,
     val attemptCount: Int = 0,

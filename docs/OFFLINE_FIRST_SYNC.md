@@ -24,6 +24,9 @@
 Each row now stores:
 
 - `ownerUserId`
+- `workerId`
+- `sessionId`
+- `eventTypes`
 - `deviceId`
 - `appVersion`
 - `attemptCount`
@@ -39,6 +42,7 @@ Current states:
 - `BLOCKED_AUTH`
 
 The worker claims only rows belonging to the current cached user, plus legacy rows without owner.
+`workerId`, `sessionId`, and `eventTypes` are denormalized queue metadata. They make it possible to quarantine later work for one worker without parsing the whole JSON queue and without blocking unrelated workers.
 
 ## Conflict handling
 
@@ -48,10 +52,11 @@ On `409`, Android:
 
 - stores a local failed batch with `failedIndex`, `reason`, and `failedEventType`;
 - removes the row from the automatic queue;
-- blocks only the affected entity:
-  - `START_SESSION` blocks the `workerId`;
-  - `END_SESSION` blocks the `sessionId`;
-- continues syncing other pending rows.
+- blocks the affected worker/session in UI;
+- moves later pending rows for the same `workerId` from the automatic queue into local failed/deferred storage with `blocked_by_previous_conflict`;
+- continues syncing pending rows of other workers.
+
+On fatal `400` or `403`, Android applies the same worker-level quarantine, but marks deferred rows with `blocked_by_previous_error`.
 
 Backend already stores the same failed batch in `failed_sync_batches`.
 

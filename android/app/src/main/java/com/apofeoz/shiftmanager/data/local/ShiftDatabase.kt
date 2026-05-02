@@ -5,7 +5,7 @@ import androidx.room.migration.Migration
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [OutboundBatchEntity::class], version = 2, exportSchema = false)
+@Database(entities = [OutboundBatchEntity::class], version = 3, exportSchema = false)
 abstract class ShiftDatabase : RoomDatabase() {
     abstract fun outboundDao(): OutboundBatchDao
 
@@ -19,6 +19,14 @@ abstract class ShiftDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE outbound_batches ADD COLUMN lastAttemptAt TEXT")
                 db.execSQL("ALTER TABLE outbound_batches ADD COLUMN lastHttpCode INTEGER")
                 db.execSQL("ALTER TABLE outbound_batches ADD COLUMN lastReason TEXT")
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE outbound_batches ADD COLUMN workerId TEXT")
+                db.execSQL("ALTER TABLE outbound_batches ADD COLUMN sessionId TEXT")
+                db.execSQL("ALTER TABLE outbound_batches ADD COLUMN eventTypes TEXT")
             }
         }
     }
