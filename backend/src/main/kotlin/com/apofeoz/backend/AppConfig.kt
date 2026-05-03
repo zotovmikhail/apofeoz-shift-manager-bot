@@ -39,7 +39,7 @@ data class AppConfig(
                     ?: default
             val accessTokenMinutes =
                 env("ACCESS_TOKEN_MINUTES")?.toLongOrNull()
-                    ?: cfgLong("accessTokenMinutes", 15)
+                    ?: cfgLong("accessTokenMinutes", 60)
             val refreshTokenDays =
                 env("REFRESH_TOKEN_DAYS")?.toLongOrNull()
                     ?: cfgLong("refreshTokenDays", 30)
