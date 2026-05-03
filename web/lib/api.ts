@@ -24,19 +24,28 @@ function apiBase(): string {
 
 function refreshToken(): string | null {
   if (typeof window === "undefined") return null;
-  return window.sessionStorage.getItem(REFRESH_KEY);
+  const persistent = window.localStorage.getItem(REFRESH_KEY);
+  if (persistent) return persistent;
+  const legacySessionToken = window.sessionStorage.getItem(REFRESH_KEY);
+  if (legacySessionToken) {
+    window.localStorage.setItem(REFRESH_KEY, legacySessionToken);
+    window.sessionStorage.removeItem(REFRESH_KEY);
+  }
+  return legacySessionToken;
 }
 
 function setTokens(tokens: Tokens) {
   accessToken = tokens.accessToken;
   if (typeof window !== "undefined") {
-    window.sessionStorage.setItem(REFRESH_KEY, tokens.refreshToken);
+    window.localStorage.setItem(REFRESH_KEY, tokens.refreshToken);
+    window.sessionStorage.removeItem(REFRESH_KEY);
   }
 }
 
 export function clearTokens() {
   accessToken = null;
   if (typeof window !== "undefined") {
+    window.localStorage.removeItem(REFRESH_KEY);
     window.sessionStorage.removeItem(REFRESH_KEY);
   }
 }
