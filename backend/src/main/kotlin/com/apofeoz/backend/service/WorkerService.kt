@@ -9,6 +9,7 @@ import com.apofeoz.backend.data.WorkerRepository
 import com.apofeoz.backend.data.SessionRepository
 import com.apofeoz.backend.domain.Role
 import com.apofeoz.backend.domain.SessionStatus
+import com.apofeoz.backend.domain.UserStatus
 import com.apofeoz.backend.domain.WorkerStatus
 import io.ktor.http.*
 import java.time.OffsetDateTime
@@ -24,7 +25,15 @@ class WorkerService(
     suspend fun list(actorId: UUID, role: Role): List<WorkerResponse> {
         val list = when (role) {
             Role.ADMIN -> workers.listAll()
-            Role.FOREMAN -> workers.listByForeman(actorId)
+            Role.FOREMAN -> {
+                val actor = users.findById(actorId)
+                    ?: throw ApiException(HttpStatusCode.Unauthorized, "unauthorized", "User not found")
+                if (actor.status != UserStatus.ACTIVE) {
+                    throw ApiException(HttpStatusCode.Forbidden, "forbidden", "Inactive foreman")
+                }
+                workers.ensureForemanSelfCard(actor.id, actor.firstName, actor.lastName)
+                workers.listByForeman(actorId)
+            }
             else -> throw ApiException(HttpStatusCode.Forbidden, "forbidden", "Cannot list workers")
         }
         return list.map { it.toResponse(users) }

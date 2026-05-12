@@ -166,23 +166,7 @@ class UserService(
     }
 
     private suspend fun ensureForemanWorkerCard(u: com.apofeoz.backend.data.UserEntity) {
-        val existing = workers.findByUserId(u.id)
-        if (existing != null) {
-            if (existing.status == WorkerStatus.INACTIVE) {
-                workers.reactivateForemanSelfCard(existing.id, u.firstName, u.lastName)
-            }
-            return
-        }
-        if (workers.reattachInactiveForemanSelfWorker(u.id, u.firstName, u.lastName)) return
-        workers.insert(
-            id = UUID.randomUUID(),
-            userId = u.id,
-            foremanId = u.id,
-            firstName = u.firstName,
-            lastName = u.lastName,
-            position = null,
-            status = WorkerStatus.ACTIVE,
-        )
+        workers.ensureForemanSelfCard(u.id, u.firstName, u.lastName)
     }
 
     private fun forbidden(): Nothing =

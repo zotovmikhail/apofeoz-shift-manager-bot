@@ -494,4 +494,80 @@ class BackendIntegrationTest {
             assertEquals(HttpStatusCode.Forbidden, resp.status)
         }
     }
+
+    @Test
+    fun foremanWorkersIncludeSelfCardAndOwnSessionCanSync() = runBlocking {
+        testApplication {
+            environment { config = appConfig() }
+            application { module() }
+            val c = createClient { install(ContentNegotiation) { json(jsonParser) } }
+            c.get("/health")
+
+            val adminTok = c.post("/api/v1/auth/login") {
+                contentType(ContentType.Application.Json)
+                setBody(LoginRequest(login = "admin@test.local", password = "AdminPass12345!"))
+            }.body<TokenResponse>()
+
+            val foremanEmail = "self-${UUID.randomUUID()}@test.local"
+            val reg = c.post("/api/v1/auth/register") {
+                contentType(ContentType.Application.Json)
+                setBody(RegisterRequest(email = foremanEmail, firstName = "Self", lastName = "Foreman", password = "password123"))
+            }
+            val initialTok = reg.body<TokenResponse>()
+            val foremanUserId = c.get("/api/v1/users/me") {
+                bearerAuth(initialTok.accessToken)
+            }.body<com.apofeoz.backend.api.UserResponse>().id
+
+            val promote = c.patch("/api/v1/users/$foremanUserId") {
+                bearerAuth(adminTok.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(PatchUserRequest(role = "FOREMAN"))
+            }
+            assertEquals(HttpStatusCode.OK, promote.status, promote.bodyAsText())
+
+            val foremanTok = c.post("/api/v1/auth/login") {
+                contentType(ContentType.Application.Json)
+                setBody(LoginRequest(login = foremanEmail, password = "password123"))
+            }.body<TokenResponse>()
+
+            val list = c.get("/api/v1/workers") { bearerAuth(foremanTok.accessToken) }
+            assertEquals(HttpStatusCode.OK, list.status, list.bodyAsText())
+            val selfWorker = list.body<List<com.apofeoz.backend.api.WorkerResponse>>()
+                .single { it.userId == foremanUserId && it.foremanId == foremanUserId }
+            assertEquals("ACTIVE", selfWorker.status)
+
+            val sessionId = UUID.randomUUID().toString()
+            val batch = SyncBatchRequest(
+                batchUid = "self-session-${UUID.randomUUID()}",
+                submittedAt = "2025-06-12T18:00:00Z",
+                events = listOf(
+                    SyncEventInput(
+                        "START_SESSION",
+                        buildJsonObject {
+                            put("sessionId", JsonPrimitive(sessionId))
+                            put("workerId", JsonPrimitive(selfWorker.id))
+                            put("startAt", JsonPrimitive("2025-06-12T08:00:00Z"))
+                        },
+                    ),
+                    SyncEventInput(
+                        "END_SESSION",
+                        buildJsonObject {
+                            put("sessionId", JsonPrimitive(sessionId))
+                            put("endAt", JsonPrimitive("2025-06-12T16:00:00Z"))
+                        },
+                    ),
+                ),
+            )
+
+            val sync = c.post("/api/v1/sync/batch") {
+                bearerAuth(foremanTok.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(batch)
+            }
+            assertEquals(HttpStatusCode.OK, sync.status, sync.bodyAsText())
+            val body = sync.body<SyncBatchResponse>()
+            assertTrue(body.applied)
+            assertEquals(listOf(selfWorker.id, selfWorker.id), body.sessions.map { it.workerId })
+        }
+    }
 }

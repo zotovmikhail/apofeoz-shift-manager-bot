@@ -49,6 +49,57 @@ class WorkerRepository {
         Workers.selectAll().where { Workers.id eq id }.single().toWorker()
     }
 
+    suspend fun ensureForemanSelfCard(
+        foremanUserId: UUID,
+        firstName: String,
+        lastName: String,
+    ): WorkerEntity = newSuspendedTransaction(Dispatchers.IO) {
+        val now = OffsetDateTime.now(ZoneOffset.UTC)
+        val linked = Workers.selectAll().where { Workers.userId eq EntityID(foremanUserId, Users) }.singleOrNull()
+        if (linked != null) {
+            val id = linked[Workers.id].value
+            Workers.update({ Workers.id eq id }) {
+                it[Workers.foremanId] = EntityID(foremanUserId, Users)
+                it[Workers.firstName] = firstName
+                it[Workers.lastName] = lastName
+                it[Workers.status] = WorkerStatus.ACTIVE.name
+                it[Workers.updatedAt] = now
+            }
+            return@newSuspendedTransaction Workers.selectAll().where { Workers.id eq id }.single().toWorker()
+        }
+
+        val detached = Workers.selectAll().where {
+            (Workers.foremanId eq EntityID(foremanUserId, Users)) and
+                (Workers.userId.isNull()) and
+                (Workers.status eq WorkerStatus.INACTIVE.name)
+        }.orderBy(Workers.updatedAt, SortOrder.DESC).firstOrNull()
+        if (detached != null) {
+            val id = detached[Workers.id].value
+            Workers.update({ Workers.id eq id }) {
+                it[Workers.userId] = EntityID(foremanUserId, Users)
+                it[Workers.firstName] = firstName
+                it[Workers.lastName] = lastName
+                it[Workers.status] = WorkerStatus.ACTIVE.name
+                it[Workers.updatedAt] = now
+            }
+            return@newSuspendedTransaction Workers.selectAll().where { Workers.id eq id }.single().toWorker()
+        }
+
+        val id = UUID.randomUUID()
+        Workers.insert {
+            it[Workers.id] = id
+            it[Workers.userId] = EntityID(foremanUserId, Users)
+            it[Workers.foremanId] = EntityID(foremanUserId, Users)
+            it[Workers.firstName] = firstName
+            it[Workers.lastName] = lastName
+            it[Workers.position] = null
+            it[Workers.status] = WorkerStatus.ACTIVE.name
+            it[Workers.createdAt] = now
+            it[Workers.updatedAt] = now
+        }
+        Workers.selectAll().where { Workers.id eq id }.single().toWorker()
+    }
+
     suspend fun findById(id: UUID): WorkerEntity? = newSuspendedTransaction(Dispatchers.IO) {
         Workers.selectAll().where { Workers.id eq id }.map { it.toWorker() }.singleOrNull()
     }

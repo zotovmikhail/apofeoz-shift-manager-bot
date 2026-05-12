@@ -637,7 +637,7 @@ private fun WorkersTab(user: UserResponseDto, snackbarHostState: SnackbarHostSta
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        Text("Список рабочих", style = MaterialTheme.typography.titleMedium)
+        Text("Вы и рабочие", style = MaterialTheme.typography.titleMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TextButton(onClick = { load() }) { Text("Обновить") }
         }
@@ -645,7 +645,13 @@ private fun WorkersTab(user: UserResponseDto, snackbarHostState: SnackbarHostSta
             modifier = Modifier.weight(1f).fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            items(workers, key = { it.id }) { w ->
+            val visibleWorkers = workers.sortedWith(
+                compareByDescending<WorkerResponseDto> { it.userId == user.id }
+                    .thenBy { it.lastName.lowercase(Locale.getDefault()) }
+                    .thenBy { it.firstName.lowercase(Locale.getDefault()) },
+            )
+            items(visibleWorkers, key = { it.id }) { w ->
+                val isForemanSelfCard = w.userId == user.id
                 val current = activeSessions.firstOrNull { it.workerId == w.id }
                 val isThisActive = current != null
                 val cachedServerSessionId = serverActiveByWorkerId[w.id]
@@ -781,7 +787,7 @@ private fun WorkersTab(user: UserResponseDto, snackbarHostState: SnackbarHostSta
                 ) {
                     Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
                         Text(
-                            "${w.firstName} ${w.lastName}",
+                            if (isForemanSelfCard) "${w.firstName} ${w.lastName} (вы)" else "${w.firstName} ${w.lastName}",
                             style = MaterialTheme.typography.titleSmall,
                         )
                         Text(
