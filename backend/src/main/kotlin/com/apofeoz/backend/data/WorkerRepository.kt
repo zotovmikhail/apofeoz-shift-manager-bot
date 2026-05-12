@@ -58,14 +58,21 @@ class WorkerRepository {
         val linked = Workers.selectAll().where { Workers.userId eq EntityID(foremanUserId, Users) }.singleOrNull()
         if (linked != null) {
             val id = linked[Workers.id].value
-            Workers.update({ Workers.id eq id }) {
-                it[Workers.foremanId] = EntityID(foremanUserId, Users)
-                it[Workers.firstName] = firstName
-                it[Workers.lastName] = lastName
-                it[Workers.status] = WorkerStatus.ACTIVE.name
-                it[Workers.updatedAt] = now
+            val needsUpdate = linked[Workers.foremanId].value != foremanUserId ||
+                linked[Workers.firstName] != firstName ||
+                linked[Workers.lastName] != lastName ||
+                linked[Workers.status] != WorkerStatus.ACTIVE.name
+            if (needsUpdate) {
+                Workers.update({ Workers.id eq id }) {
+                    it[Workers.foremanId] = EntityID(foremanUserId, Users)
+                    it[Workers.firstName] = firstName
+                    it[Workers.lastName] = lastName
+                    it[Workers.status] = WorkerStatus.ACTIVE.name
+                    it[Workers.updatedAt] = now
+                }
+                return@newSuspendedTransaction Workers.selectAll().where { Workers.id eq id }.single().toWorker()
             }
-            return@newSuspendedTransaction Workers.selectAll().where { Workers.id eq id }.single().toWorker()
+            return@newSuspendedTransaction linked.toWorker()
         }
 
         val detached = Workers.selectAll().where {

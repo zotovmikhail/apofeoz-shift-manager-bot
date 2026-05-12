@@ -89,6 +89,7 @@ import com.apofeoz.shiftmanager.work.OutboundSyncScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Locale
@@ -455,17 +456,21 @@ private fun ProfileTab(user: UserResponseDto, isOnline: Boolean, onLoggedOut: ()
         }
         Button(onClick = {
             scope.launch {
-                runCatching {
-                    val r = AppContainer.tokenRepository.getRefreshToken()
-                    if (!r.isNullOrBlank()) {
-                        AppContainer.api.logout(RefreshRequestDto(r))
-                    }
-                }
+                val refreshToken = AppContainer.tokenRepository.getRefreshToken()
                 AppContainer.tokenRepository.clear()
                 AppContainer.authStateRepository.setAuthRejected(false)
                 AppContainer.cachedUserRepository.clear()
                 AppContainer.cachedWorkersRepository.clear()
                 onLoggedOut()
+                if (!refreshToken.isNullOrBlank()) {
+                    AppContainer.appScope.launch {
+                        runCatching {
+                            withTimeoutOrNull(1_500) {
+                                AppContainer.api.logout(RefreshRequestDto(refreshToken))
+                            }
+                        }
+                    }
+                }
             }
         }) { Text("Выйти") }
     }
@@ -626,6 +631,93 @@ private fun WorkersTab(user: UserResponseDto, snackbarHostState: SnackbarHostSta
             }
         }
     }
+    fun toggleSession(w: WorkerResponseDto) {
+        scope.launch {
+            val existing = sessions.getActiveFor(w.id)
+            val cachedServerSessionIdNow = serverActiveByWorkerId[w.id]
+            // Если END уже в очереди для этой серверной сессии, считаем её "логически остановленной"
+            // и разрешаем старт новой смены (например, после обеда) даже в офлайне.
+            val effectiveServerSessionId =
+                if (cachedServerSessionIdNow != null && cachedServerSessionIdNow in pendingEndingSessionIds) null else cachedServerSessionIdNow
+
+            if (existing == null && effectiveServerSessionId != null) {
+                // Смена активна по последнему серверному снимку -> можно завершить офлайн,
+                // т.к. у нас есть sessionId. После этого локально считаем смену закрытой,
+                // чтобы можно было сразу начать новую смену (например, после обеда) даже офлайн.
+                val endAt = OffsetDateTime.now(ZoneOffset.UTC).toString()
+                val batch = SyncBatchRequestDto(
+                    batchUid = UUID.randomUUID().toString(),
+                    submittedAt = endAt,
+                    events = listOf(
+                        SyncEventDto(
+                            type = "END_SESSION",
+                            payload = buildJsonObject {
+                                put("sessionId", effectiveServerSessionId)
+                                put("endAt", endAt)
+                            },
+                        ),
+                    ),
+                )
+                queue.enqueue(batch)
+                pendingActions.addEnding(effectiveServerSessionId)
+                pendingEndingSessionIds = pendingEndingSessionIds + effectiveServerSessionId
+                serverActiveByWorkerId = serverActiveByWorkerId - w.id
+                cache.set(CachedActiveSessions(byWorkerId = serverActiveByWorkerId, fetchedAt = OffsetDateTime.now(ZoneOffset.UTC).toString()))
+                sessions.removeBySessionId(effectiveServerSessionId)
+                activeSessions = mergedWithServer(sessions.getActiveSessions())
+                snackbarHostState.showSnackbar("Конец смены добавлен в очередь")
+            } else if (existing == null) {
+                val sessionId = UUID.randomUUID().toString()
+                val startAt = OffsetDateTime.now(ZoneOffset.UTC).toString()
+                val batch = SyncBatchRequestDto(
+                    batchUid = UUID.randomUUID().toString(),
+                    submittedAt = startAt,
+                    events = listOf(
+                        SyncEventDto(
+                            type = "START_SESSION",
+                            payload = buildJsonObject {
+                                put("sessionId", sessionId)
+                                put("workerId", w.id)
+                                put("startAt", startAt)
+                            },
+                        ),
+                    ),
+                )
+                queue.enqueue(batch)
+                sessions.upsert(LocalActiveSession(workerId = w.id, sessionId = sessionId, startAt = startAt))
+                activeSessions = mergedWithServer(sessions.getActiveSessions())
+                snackbarHostState.showSnackbar("Старт добавлен в очередь")
+            } else {
+                if (existing.sessionId in pendingEndingSessionIds) {
+                    snackbarHostState.showSnackbar("Завершение смены уже в очереди")
+                    return@launch
+                }
+                val sessionId = existing.sessionId
+                val endAt = OffsetDateTime.now(ZoneOffset.UTC).toString()
+                val batch = SyncBatchRequestDto(
+                    batchUid = UUID.randomUUID().toString(),
+                    submittedAt = endAt,
+                    events = listOf(
+                        SyncEventDto(
+                            type = "END_SESSION",
+                            payload = buildJsonObject {
+                                put("sessionId", sessionId)
+                                put("endAt", endAt)
+                            },
+                        ),
+                    ),
+                )
+                queue.enqueue(batch)
+                pendingActions.addEnding(sessionId)
+                pendingEndingSessionIds = pendingEndingSessionIds + sessionId
+                serverActiveByWorkerId = serverActiveByWorkerId - w.id
+                cache.set(CachedActiveSessions(byWorkerId = serverActiveByWorkerId, fetchedAt = OffsetDateTime.now(ZoneOffset.UTC).toString()))
+                sessions.remove(w.id)
+                activeSessions = mergedWithServer(sessions.getActiveSessions())
+                snackbarHostState.showSnackbar("Конец смены добавлен в очередь")
+            }
+        }
+    }
     LaunchedEffect(Unit) {
         load()
     }
@@ -682,97 +774,7 @@ private fun WorkersTab(user: UserResponseDto, snackbarHostState: SnackbarHostSta
                                 Modifier
                             },
                         )
-                        .clickable(enabled = w.status == "ACTIVE" && !isBlockedWorker && !isBlockedSession) {
-                            scope.launch {
-                                val existing = sessions.getActiveFor(w.id)
-                                val cachedServerSessionIdNow = serverActiveByWorkerId[w.id]
-                                // Если END уже в очереди для этой серверной сессии, считаем её "логически остановленной"
-                                // и разрешаем старт новой смены (например, после обеда) даже в офлайне.
-                                val effectiveServerSessionId =
-                                    if (cachedServerSessionIdNow != null && cachedServerSessionIdNow in pendingEndingSessionIds) null else cachedServerSessionIdNow
-
-                                if (existing == null && effectiveServerSessionId != null) {
-                                    // Смена активна по последнему серверному снимку → можно завершить офлайн,
-                                    // т.к. у нас есть sessionId. После этого локально считаем смену закрытой,
-                                    // чтобы можно было сразу начать новую смену (например, после обеда) даже офлайн.
-                                    val endAt = OffsetDateTime.now(ZoneOffset.UTC).toString()
-                                    val batch = SyncBatchRequestDto(
-                                        batchUid = UUID.randomUUID().toString(),
-                                        submittedAt = endAt,
-                                        events = listOf(
-                                            SyncEventDto(
-                                                type = "END_SESSION",
-                                                payload = buildJsonObject {
-                                                    put("sessionId", effectiveServerSessionId)
-                                                    put("endAt", endAt)
-                                                },
-                                            ),
-                                        ),
-                                    )
-                                    queue.enqueue(batch)
-                                    pendingActions.addEnding(effectiveServerSessionId)
-                                    pendingEndingSessionIds = pendingEndingSessionIds + effectiveServerSessionId
-                                    // убрать из серверного кэша, иначе merge вернёт "активна" обратно
-                                    serverActiveByWorkerId = serverActiveByWorkerId - w.id
-                                    cache.set(CachedActiveSessions(byWorkerId = serverActiveByWorkerId, fetchedAt = OffsetDateTime.now(ZoneOffset.UTC).toString()))
-                                    // локально считаем смену закрытой сразу
-                                    sessions.removeBySessionId(effectiveServerSessionId)
-                                    activeSessions = mergedWithServer(sessions.getActiveSessions())
-                                    snackbarHostState.showSnackbar("Конец смены добавлен в очередь")
-                                } else if (existing == null) {
-                                        val sessionId = UUID.randomUUID().toString()
-                                        val startAt = OffsetDateTime.now(ZoneOffset.UTC).toString()
-                                        val batch = SyncBatchRequestDto(
-                                            batchUid = UUID.randomUUID().toString(),
-                                            submittedAt = startAt,
-                                            events = listOf(
-                                                SyncEventDto(
-                                                    type = "START_SESSION",
-                                                    payload = buildJsonObject {
-                                                        put("sessionId", sessionId)
-                                                        put("workerId", w.id)
-                                                        put("startAt", startAt)
-                                                    },
-                                                ),
-                                            ),
-                                        )
-                                        queue.enqueue(batch)
-                                        sessions.upsert(LocalActiveSession(workerId = w.id, sessionId = sessionId, startAt = startAt))
-                                        activeSessions = mergedWithServer(sessions.getActiveSessions())
-                                        snackbarHostState.showSnackbar("Старт добавлен в очередь")
-                                } else {
-                                        if (existing.sessionId in pendingEndingSessionIds) {
-                                            snackbarHostState.showSnackbar("Завершение смены уже в очереди")
-                                            return@launch
-                                        }
-                                        val sessionId = existing.sessionId
-                                        val endAt = OffsetDateTime.now(ZoneOffset.UTC).toString()
-                                        val batch = SyncBatchRequestDto(
-                                            batchUid = UUID.randomUUID().toString(),
-                                            submittedAt = endAt,
-                                            events = listOf(
-                                                SyncEventDto(
-                                                    type = "END_SESSION",
-                                                    payload = buildJsonObject {
-                                                        put("sessionId", sessionId)
-                                                        put("endAt", endAt)
-                                                    },
-                                                ),
-                                            ),
-                                        )
-                                        queue.enqueue(batch)
-                                        pendingActions.addEnding(sessionId)
-                                        pendingEndingSessionIds = pendingEndingSessionIds + sessionId
-                                        // убрать из серверного кэша, иначе merge вернёт "активна" обратно
-                                        serverActiveByWorkerId = serverActiveByWorkerId - w.id
-                                        cache.set(CachedActiveSessions(byWorkerId = serverActiveByWorkerId, fetchedAt = OffsetDateTime.now(ZoneOffset.UTC).toString()))
-                                        // локально считаем смену закрытой сразу → можно стартовать новую даже офлайн
-                                        sessions.remove(w.id)
-                                        activeSessions = mergedWithServer(sessions.getActiveSessions())
-                                        snackbarHostState.showSnackbar("Конец смены добавлен в очередь")
-                                }
-                            }
-                        },
+                        .clickable(enabled = w.status == "ACTIVE" && !isBlockedWorker && !isBlockedSession) { toggleSession(w) },
                     shape = MaterialTheme.shapes.large,
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                     border = if (isThisActive) BorderStroke(1.dp, ApofeozColors.PrimaryBorder) else null,

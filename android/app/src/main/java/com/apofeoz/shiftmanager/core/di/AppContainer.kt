@@ -19,12 +19,17 @@ import com.apofeoz.shiftmanager.data.local.TestConnectivityOverrideRepository
 import com.apofeoz.shiftmanager.data.local.TokenRepository
 import com.apofeoz.shiftmanager.data.remote.ApofeozApi
 import com.apofeoz.shiftmanager.data.repository.OutboundBatchQueueRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.serialization.json.Json
 
 object AppContainer {
+
+    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _sessionExpired = MutableSharedFlow<Unit>(extraBufferCapacity = 8)
     val sessionExpired: SharedFlow<Unit> = _sessionExpired.asSharedFlow()
