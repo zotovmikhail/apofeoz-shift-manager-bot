@@ -456,21 +456,19 @@ private fun ProfileTab(user: UserResponseDto, isOnline: Boolean, onLoggedOut: ()
         }
         Button(onClick = {
             scope.launch {
-                val refreshToken = AppContainer.tokenRepository.getRefreshToken()
+                runCatching {
+                    val refreshToken = AppContainer.tokenRepository.getRefreshToken()
+                    if (!refreshToken.isNullOrBlank()) {
+                        withTimeoutOrNull(2_000) {
+                            AppContainer.api.logout(RefreshRequestDto(refreshToken))
+                        }
+                    }
+                }
                 AppContainer.tokenRepository.clear()
                 AppContainer.authStateRepository.setAuthRejected(false)
                 AppContainer.cachedUserRepository.clear()
                 AppContainer.cachedWorkersRepository.clear()
                 onLoggedOut()
-                if (!refreshToken.isNullOrBlank()) {
-                    AppContainer.appScope.launch {
-                        runCatching {
-                            withTimeoutOrNull(1_500) {
-                                AppContainer.api.logout(RefreshRequestDto(refreshToken))
-                            }
-                        }
-                    }
-                }
             }
         }) { Text("Выйти") }
     }
